@@ -1,0 +1,18 @@
+version: '3.1'
+
+services:
+
+  database:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: importacao-distribuida
+      MYSQL_USER: importacao-distribuida
+      MYSQL_PASSWORD: importacao-distribuida
+    ports:
+      - 3306:3306
+    networks:
+      - importacao-distribuida
+
+networks:
+  importacao-distribuida:
