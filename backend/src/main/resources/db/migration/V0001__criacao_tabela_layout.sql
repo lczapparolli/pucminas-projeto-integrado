@@ -1,4 +1,4 @@
-CREATE TABLE `importacao-distribuida`.LAYOUT (
+CREATE TABLE `importacao_distribuida`.LAYOUT (
     layout_id int auto_increment NOT NULL,
     identificacao varchar(50) NOT NULL,
     descricao varchar(250) NOT NULL,
