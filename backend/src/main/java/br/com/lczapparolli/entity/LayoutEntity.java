@@ -49,6 +49,6 @@ public class LayoutEntity {
      * Indicação se o layout está disponível para ser utilizado
      */
     @Column(name = "ativo", nullable = false)
-    public Boolean ativo;
+    private Boolean ativo;
 
 }
