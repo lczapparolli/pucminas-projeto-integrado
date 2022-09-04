@@ -1,4 +1,4 @@
-package br.com.lczapparolli.service;
+package br.com.lczapparolli.erro;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +54,7 @@ public class ResultadoOperacao<T> {
      * @param <T> Classe do objeto para o resultado de sucesso
      * @author lczapparolli
      */
-    static class Builder<T> {
+    public static class Builder<T> {
 
         /**
          * Resultado de sucesso da operação
@@ -86,6 +86,32 @@ public class ResultadoOperacao<T> {
         public Builder<T> erro(ErroDTO erro) {
             erros.add(erro);
             return this;
+        }
+
+        /**
+         * Adiciona um erro na lista a partir de um item do enumerador {@link ErroAplicacao}
+         *
+         * @param erroAplicacao Item do enumerador contendo os dados do erro
+         * @return Retorna a instância atualizada do construtor
+         */
+        public Builder<T> erro(ErroAplicacao erroAplicacao) {
+            return erro(erroAplicacao, null);
+        }
+
+        /**
+         * Adiciona um erro na lista a partir de um item do enumerador {@link ErroAplicacao} e vinculando a um campo
+         *
+         * @param erroAplicacao Item do enumerador contendo os dados do erro
+         * @param campo Campo associado ao erro gerado
+         * @return Retorna a instância atualizada do construtor
+         */
+        public Builder<T> erro(ErroAplicacao erroAplicacao, String campo) {
+            return erro(ErroDTO.builder()
+                    .mensagem(erroAplicacao.getMensagem())
+                    .validacao(erroAplicacao.isValidacao())
+                    .codigo(erroAplicacao.getCodigoErro())
+                    .campo(campo)
+                    .build());
         }
 
         /**
