@@ -15,7 +15,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum ErroAplicacao {
 
-    ERRO_DESCONHECIDO("Ocorreu um erro desconhecido na aplicação", false);
+    ERRO_DESCONHECIDO("Ocorreu um erro desconhecido na aplicação", false),
+    ERRO_LAYOUT_NAO_ENCONTRADO("O layout informado não existe", true);
 
     /**
      * Mensagem associada ao erro para ser devolvida ao chamador
