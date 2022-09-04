@@ -1,5 +1,7 @@
 package br.com.lczapparolli.repository;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import br.com.lczapparolli.entity.SituacaoEntity;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 
@@ -8,5 +10,6 @@ import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
  *
  * @author lczapparolli
  */
+@ApplicationScoped
 public class SituacaoRepository implements PanacheRepositoryBase<SituacaoEntity, Integer> {
 }
