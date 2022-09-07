@@ -16,7 +16,11 @@ import lombok.Getter;
 public enum ErroAplicacao {
 
     ERRO_DESCONHECIDO("Ocorreu um erro desconhecido na aplicação", false),
-    ERRO_LAYOUT_NAO_ENCONTRADO("O layout informado não existe", true);
+    ERRO_IMPORTACAO_NAO_INFORMADA("Os dados para importação não foram informados", true),
+    ERRO_LAYOUT_NAO_ENCONTRADO("O layout informado não existe", true),
+    ERRO_CAMPO_NAO_INFORMADO("O campo não foi informado", true),
+    ERRO_LAYOUT_DESATIVADO("O layout informado está desativado e não pode ser utilizado", true),
+    ERRO_ARQUIVO_VAZIO("O arquivo informado está vazio e não pode ser importado", true);
 
     /**
      * Mensagem associada ao erro para ser devolvida ao chamador
