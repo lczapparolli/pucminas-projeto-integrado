@@ -26,16 +26,17 @@ public class LayoutService {
      * @return Retorna o layout encontrado
      */
     public ResultadoOperacao<LayoutEntity> obterLayout(Integer layoutId) {
-        var resultado = ResultadoOperacao.<LayoutEntity>builder();
+        var resultado = new ResultadoOperacao<LayoutEntity>();
 
         var layoutOpcional = layoutRepository.findByIdOptional(layoutId);
         if (layoutOpcional.isEmpty()) {
-            resultado.erro(ErroAplicacao.ERRO_LAYOUT_NAO_ENCONTRADO);
+            resultado.addErro(ErroAplicacao.ERRO_LAYOUT_NAO_ENCONTRADO);
+            return resultado;
         }
 
-        resultado.resultado(layoutOpcional.orElse(null));
+        resultado.setResultado(layoutOpcional.orElse(null));
 
-        return resultado.build();
+        return resultado;
     }
 
 }

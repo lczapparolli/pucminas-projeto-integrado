@@ -2,12 +2,12 @@ package br.com.lczapparolli.erro;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import br.com.lczapparolli.dto.ErroDTO;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * Classe para retornar o resultado de uma operação do serviço
@@ -17,6 +17,7 @@ import lombok.Getter;
  */
 @Getter
 @EqualsAndHashCode
+@NoArgsConstructor
 @AllArgsConstructor
 public class ResultadoOperacao<T> {
 
@@ -28,7 +29,7 @@ public class ResultadoOperacao<T> {
     /**
      * Lista de erros que ocorreram durante a operação
      */
-    private List<ErroDTO> erros;
+    private final List<ErroDTO> erros = new ArrayList<>();
 
     /**
      * Indica se houve algum erro ao realizar o processamento
@@ -36,93 +37,55 @@ public class ResultadoOperacao<T> {
      * @return Retorna @{@code true} se houver algum erro
      */
     public boolean possuiErros() {
-        return !Objects.isNull(erros) && !erros.isEmpty();
+        return !erros.isEmpty();
     }
 
     /**
-     * Cria uma instância do construtor
+     * Define o resultado da operação
      *
-     * @return Retorna a instância criada
+     * @param resultado Resultado a ser definido
+     * @return Retorna a instância atualizada do objeto para encadeamento
      */
-    public static <T> Builder<T> builder() {
-        return new Builder<>();
+    public ResultadoOperacao<T> setResultado(T resultado) {
+        this.resultado = resultado;
+        return this;
     }
 
     /**
-     * Classe construtora para o resultado da operação
+     * Adiciona um erro na lista
      *
-     * @param <T> Classe do objeto para o resultado de sucesso
-     * @author lczapparolli
+     * @param erro Erro a ser adicionado
+     * @return Retorna a instância atualizada do objeto para encadeamento
      */
-    public static class Builder<T> {
+    public ResultadoOperacao<T> addErro(ErroDTO erro) {
+        erros.add(erro);
+        return this;
+    }
 
-        /**
-         * Resultado de sucesso da operação
-         */
-        private T resultado;
+    /**
+     * Adiciona um erro na lista a partir de um item do enumerador {@link ErroAplicacao}
+     *
+     * @param erroAplicacao Item do enumerador contendo os dados do erro
+     * @return Retorna a instância atualizada do objeto para encadeamento
+     */
+    public ResultadoOperacao<T> addErro(ErroAplicacao erroAplicacao) {
+        return addErro(erroAplicacao, null);
+    }
 
-        /**
-         * Lista de erros que ocorreram durante a operação
-         */
-        private final List<ErroDTO> erros = new ArrayList<>();
-
-        /**
-         * Define o resultado da operação
-         *
-         * @param resultado Resultado a ser definido
-         * @return Retorna a instância atualizada do construtor
-         */
-        public Builder<T> resultado(T resultado) {
-            this.resultado = resultado;
-            return this;
-        }
-
-        /**
-         * Adiciona um erro na lista
-         *
-         * @param erro Erro a ser adicionado
-         * @return Retorna a instância atualizada do construtor
-         */
-        public Builder<T> erro(ErroDTO erro) {
-            erros.add(erro);
-            return this;
-        }
-
-        /**
-         * Adiciona um erro na lista a partir de um item do enumerador {@link ErroAplicacao}
-         *
-         * @param erroAplicacao Item do enumerador contendo os dados do erro
-         * @return Retorna a instância atualizada do construtor
-         */
-        public Builder<T> erro(ErroAplicacao erroAplicacao) {
-            return erro(erroAplicacao, null);
-        }
-
-        /**
-         * Adiciona um erro na lista a partir de um item do enumerador {@link ErroAplicacao} e vinculando a um campo
-         *
-         * @param erroAplicacao Item do enumerador contendo os dados do erro
-         * @param campo Campo associado ao erro gerado
-         * @return Retorna a instância atualizada do construtor
-         */
-        public Builder<T> erro(ErroAplicacao erroAplicacao, String campo) {
-            return erro(ErroDTO.builder()
-                    .mensagem(erroAplicacao.getMensagem())
-                    .validacao(erroAplicacao.isValidacao())
-                    .codigo(erroAplicacao.getCodigoErro())
-                    .campo(campo)
-                    .build());
-        }
-
-        /**
-         * Constrói a instância da classe de resultado
-         *
-         * @return Retorna a instância criada
-         */
-        public ResultadoOperacao<T> build() {
-            return new ResultadoOperacao<>(resultado, erros);
-        }
-
+    /**
+     * Adiciona um erro na lista a partir de um item do enumerador {@link ErroAplicacao} e vinculando a um campo
+     *
+     * @param erroAplicacao Item do enumerador contendo os dados do erro
+     * @param campo Campo associado ao erro gerado
+     * @return Retorna a instância atualizada do objeto para encadeamento
+     */
+    public ResultadoOperacao<T> addErro(ErroAplicacao erroAplicacao, String campo) {
+        return addErro(ErroDTO.builder()
+                .mensagem(erroAplicacao.getMensagem())
+                .validacao(erroAplicacao.isValidacao())
+                .codigo(erroAplicacao.getCodigoErro())
+                .campo(campo)
+                .build());
     }
 
 }
