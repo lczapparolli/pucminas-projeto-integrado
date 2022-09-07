@@ -1,7 +1,5 @@
 package br.com.lczapparolli.service;
 
-import static br.com.lczapparolli.ValidacaoTestUtils.validarErro;
-import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_LAYOUT_NAO_ENCONTRADO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,10 +31,10 @@ public class LayoutServiceTest {
     public void obterLayout_sucesso_test() {
         var layoutEntity = layoutTestUtils.gerarNovoLayout();
 
-        var resultadoOperacao = layoutService.obterLayout(layoutEntity.getLayoutId());
+        var layoutOptional = layoutService.obterLayout(layoutEntity.getLayoutId());
 
-        assertFalse(resultadoOperacao.possuiErros());
-        assertEquals(layoutEntity, resultadoOperacao.getResultado());
+        assertTrue(layoutOptional.isPresent());
+        assertEquals(layoutEntity, layoutOptional.get());
     }
 
     /**
@@ -44,10 +42,9 @@ public class LayoutServiceTest {
      */
     @Test
     public void obterLayout_naoEncontrado_test() {
-        var resultadoOperacao = layoutService.obterLayout(Integer.MIN_VALUE);
+        var layoutOptional = layoutService.obterLayout(Integer.MIN_VALUE);
 
-        assertTrue(resultadoOperacao.possuiErros());
-        validarErro(resultadoOperacao, ERRO_LAYOUT_NAO_ENCONTRADO, null);
+        assertFalse(layoutOptional.isPresent());
     }
 
 }
