@@ -19,8 +19,7 @@ public enum ErroAplicacao {
     ERRO_IMPORTACAO_NAO_INFORMADA("Os dados para importação não foram informados", true),
     ERRO_LAYOUT_NAO_ENCONTRADO("O layout informado não existe", true),
     ERRO_CAMPO_NAO_INFORMADO("O campo não foi informado", true),
-    ERRO_LAYOUT_DESATIVADO("O layout informado está desativado e não pode ser utilizado", true),
-    ERRO_ARQUIVO_VAZIO("O arquivo informado está vazio e não pode ser importado", true);
+    ERRO_LAYOUT_DESATIVADO("O layout informado está desativado e não pode ser utilizado", true);
 
     /**
      * Mensagem associada ao erro para ser devolvida ao chamador
