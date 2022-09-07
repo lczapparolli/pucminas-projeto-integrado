@@ -88,4 +88,15 @@ public class ResultadoOperacao<T> {
                 .build());
     }
 
+    /**
+     * Adiciona uma lista de erros ao objeto
+     *
+     * @param listaErros Lista de erros já existentes
+     * @return Retorna a instância do objeto para encadeamento
+     */
+    public ResultadoOperacao<T> addErros(List<ErroDTO> listaErros) {
+        erros.addAll(listaErros);
+        return this;
+    }
+
 }

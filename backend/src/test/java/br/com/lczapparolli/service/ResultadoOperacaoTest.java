@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+
 import br.com.lczapparolli.dto.ErroDTO;
 import br.com.lczapparolli.erro.ErroAplicacao;
 import br.com.lczapparolli.erro.ResultadoOperacao;
@@ -45,6 +47,29 @@ public class ResultadoOperacaoTest {
         assertEquals(ErroAplicacao.ERRO_DESCONHECIDO.getCodigoErro(), resultadoOperacao.getErros().get(0).getCodigo());
         assertEquals(ErroAplicacao.ERRO_DESCONHECIDO.isValidacao(), resultadoOperacao.getErros().get(0).isValidacao());
         assertEquals(campo, resultadoOperacao.getErros().get(0).getCampo());
+    }
+
+    /**
+     * Verifica a inclusão de uma lista de erros
+     */
+    @Test
+    public void addErros_test() {
+        var erro1 = ErroDTO.builder()
+                .campo("campo1")
+                .codigo(ErroAplicacao.ERRO_DESCONHECIDO.getCodigoErro())
+                .validacao(ErroAplicacao.ERRO_DESCONHECIDO.isValidacao())
+                .mensagem(ErroAplicacao.ERRO_DESCONHECIDO.getMensagem())
+                .build();
+        var erro2 = ErroDTO.builder()
+                .campo("campo2")
+                .codigo(ErroAplicacao.ERRO_DESCONHECIDO.getCodigoErro())
+                .validacao(ErroAplicacao.ERRO_DESCONHECIDO.isValidacao())
+                .mensagem(ErroAplicacao.ERRO_DESCONHECIDO.getMensagem())
+                .build();
+
+        var resultado = new ResultadoOperacao<Void>().addErros(List.of(erro1, erro2));
+        assertTrue(resultado.getErros().contains(erro1));
+        assertTrue(resultado.getErros().contains(erro2));
     }
 
     /**
