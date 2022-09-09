@@ -12,13 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.ByteArrayInputStream;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 
 import br.com.lczapparolli.LayoutTestUtils;
 import br.com.lczapparolli.dto.ImportacaoNovoDTO;
 import br.com.lczapparolli.entity.LayoutEntity;
+import br.com.lczapparolli.mock.FileUploadMock;
 import br.com.lczapparolli.repository.ImportacaoRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.BeforeAll;
@@ -166,10 +166,10 @@ public class ImportacaoServiceTest {
      */
     private ImportacaoNovoDTO gerarImportacaoNovoDTO() {
         var indice = contador.incrementAndGet();
-        var conteudoArquivo = String.format("teste %05d", indice);
+        var nomeArquivo = String.format("teste_%05d.txt", indice);
         return ImportacaoNovoDTO.builder()
-                .arquivo(new ByteArrayInputStream(conteudoArquivo.getBytes()))
-                .nomeArquivo(String.format("teste_%05d.txt", indice))
+                .arquivo(new FileUploadMock("arquivo", nomeArquivo))
+                .nomeArquivo(nomeArquivo)
                 .layoutId(layout.getLayoutId())
                 .build();
     }
