@@ -17,6 +17,9 @@ import br.com.lczapparolli.dto.ErroDTO;
 import br.com.lczapparolli.dto.ImportacaoNovoDTO;
 import br.com.lczapparolli.erro.ResultadoOperacao;
 import br.com.lczapparolli.service.ImportacaoService;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.MultipartForm;
 
 /**
@@ -25,6 +28,7 @@ import org.jboss.resteasy.reactive.MultipartForm;
  * @author lczapparolli
  */
 @Path("/importacao")
+@Tag(name = "Importação", description = "Endpoints para a manipulação das importações")
 public class ImportacaoResource {
 
     @Inject
@@ -39,6 +43,8 @@ public class ImportacaoResource {
     @POST
     @Consumes({MULTIPART_FORM_DATA, APPLICATION_JSON, APPLICATION_XML})
     @Produces({APPLICATION_JSON, APPLICATION_XML})
+    @Operation(description = "Realiza o upload de um arquivo e inicia o processo de importação")
+    @RequestBody(name = "DadosNovaImportacao", description = "Conteúdo da requisição para iniciar a importação")
     public Response iniciarImportacao(@MultipartForm ImportacaoNovoDTO importacaoNovoDTO) {
         var resultado = importacaoService.iniciarImportacao(importacaoNovoDTO);
         if (resultado.possuiErros()) {

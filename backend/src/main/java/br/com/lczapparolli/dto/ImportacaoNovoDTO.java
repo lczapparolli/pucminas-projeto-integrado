@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
@@ -27,13 +28,15 @@ public class ImportacaoNovoDTO {
      */
     @RestForm("layoutId")
     @PartType(TEXT_PLAIN)
+    @Parameter(name = "layoutId", description = "Identificação do layout a ser utilizado para a importação", example = "1", required = true)
     private Integer layoutId;
 
     /**
-     * Nome do arquivo a ser importado
+     * Nome do arquivo que será apresentado para identificação
      */
     @RestForm("nomeArquivo")
     @PartType(TEXT_PLAIN)
+    @Parameter(name = "nomeArquivo", description = "Nome do arquivo que será apresentado para identificação", example = "arquivo_importado_1.txt", required = true)
     private String nomeArquivo;
 
     /**
@@ -41,6 +44,7 @@ public class ImportacaoNovoDTO {
      */
     @RestForm("arquivo")
     @PartType(APPLICATION_OCTET_STREAM)
+    @Parameter(name = "arquivo", description = "Conteúdo do arquivo a ser importado", required = true)
     private FileUpload arquivo;
 
 }
