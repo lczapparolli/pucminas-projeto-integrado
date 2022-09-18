@@ -6,9 +6,9 @@ services:
     image: mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: importacao-distribuida
-      MYSQL_USER: importacao-distribuida
-      MYSQL_PASSWORD: importacao-distribuida
+      MYSQL_DATABASE: importacao_distribuida
+      MYSQL_USER: importacao_distribuida
+      MYSQL_PASSWORD: importacao_distribuida
     ports:
       - 3306:3306
     networks:

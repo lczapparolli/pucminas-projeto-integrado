@@ -34,7 +34,7 @@ public class SituacaoEntity {
     private Integer situacaoId;
 
     /**
-     * Descrição da situação para
+     * Descrição da situação
      */
     @Column(name = "descricao", nullable = false, length = 250)
     private String descricao;
