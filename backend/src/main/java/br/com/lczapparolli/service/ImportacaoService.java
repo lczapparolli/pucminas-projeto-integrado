@@ -1,5 +1,6 @@
 package br.com.lczapparolli.service;
 
+import static br.com.lczapparolli.dominio.Situacao.ERRO;
 import static br.com.lczapparolli.dominio.Situacao.PROCESSANDO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_CAMPO_NAO_INFORMADO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_IMPORTACAO_NAO_INFORMADA;
@@ -20,6 +21,7 @@ import br.com.lczapparolli.entity.LayoutEntity;
 import br.com.lczapparolli.entity.SituacaoEntity;
 import br.com.lczapparolli.erro.ResultadoOperacao;
 import br.com.lczapparolli.repository.ImportacaoRepository;
+import br.com.lczapparolli.service.upload.UploadService;
 
 /**
  * Serviço com regras de negócio para manipulação das importações
@@ -34,6 +36,9 @@ public class ImportacaoService {
 
     @Inject
     SituacaoService situacaoService;
+
+    @Inject
+    UploadService uploadService;
 
     @Inject
     ImportacaoRepository importacaoRepository;
@@ -64,6 +69,17 @@ public class ImportacaoService {
                 .situacao(obterSituacao(PROCESSANDO))
                 .build();
         importacaoRepository.persist(importacaoEntity);
+
+        var upload = uploadService.carregarArquivo(
+                importacaoEntity.getLayout().getIdentificacao(),
+                importacaoEntity.getNomeArquivo(),
+                importacaoDTO.getArquivo());
+        if (upload.possuiErros()) {
+            importacaoEntity.setSituacao(obterSituacao(ERRO));
+            importacaoRepository.persist(importacaoEntity);
+
+            resultado.addErros(upload.getErros());
+        }
 
         return resultado;
     }

@@ -1,16 +1,22 @@
 package br.com.lczapparolli.service;
 
 import static br.com.lczapparolli.ValidacaoTestUtils.validarErro;
+import static br.com.lczapparolli.dominio.Situacao.ERRO;
 import static br.com.lczapparolli.dominio.Situacao.PROCESSANDO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_CAMPO_NAO_INFORMADO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_IMPORTACAO_NAO_INFORMADA;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_LAYOUT_DESATIVADO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_LAYOUT_NAO_ENCONTRADO;
+import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_UPLOAD_TRANSMISSAO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
@@ -18,9 +24,12 @@ import javax.inject.Inject;
 import br.com.lczapparolli.LayoutTestUtils;
 import br.com.lczapparolli.dto.ImportacaoNovoDTO;
 import br.com.lczapparolli.entity.LayoutEntity;
+import br.com.lczapparolli.erro.ResultadoOperacao;
 import br.com.lczapparolli.mock.FileUploadMock;
 import br.com.lczapparolli.repository.ImportacaoRepository;
+import br.com.lczapparolli.service.upload.UploadService;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.mockito.InjectMock;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -41,6 +50,9 @@ public class ImportacaoServiceTest {
     @Inject
     ImportacaoRepository importacaoRepository;
 
+    @InjectMock
+    UploadService uploadService;
+
     private LayoutEntity layout;
     private AtomicInteger contador;
 
@@ -55,6 +67,9 @@ public class ImportacaoServiceTest {
      */
     @Test
     public void iniciarImportacao_sucesso_test() {
+        // Configurando mock
+        doReturn(new ResultadoOperacao<Void>()).when(uploadService).carregarArquivo(any(), any(), any());
+
         var importacoes = importacaoRepository.count();
         var importacaoDTO = gerarImportacaoNovoDTO();
 
@@ -72,6 +87,12 @@ public class ImportacaoServiceTest {
         assertEquals(PROCESSANDO.name(), importacaoEntity.get().getSituacao().getDescricao());
         assertNotNull(importacaoEntity.get().getInicioImportacao());
         assertNull(importacaoEntity.get().getFimImportacao());
+
+        // Verifica se o serviço de upload foi chamado
+        verify(uploadService).carregarArquivo(
+                eq(importacaoEntity.get().getLayout().getIdentificacao()),
+                eq(importacaoEntity.get().getNomeArquivo()),
+                eq(importacaoDTO.getArquivo()));
     }
 
     /**
@@ -157,6 +178,27 @@ public class ImportacaoServiceTest {
         importacaoDTO.setNomeArquivo(null);
         resultado = importacaoService.iniciarImportacao(importacaoDTO);
         validarErro(resultado, ERRO_CAMPO_NAO_INFORMADO, "nomeArquivo");
+    }
+
+    /**
+     * Verifica o comportamento caso ocorra um erro no upload do arquivo
+     */
+    @Test
+    public void iniciarImportacao_erroUpload_test() {
+        // Configurando mock
+        var resultadoUpload = new ResultadoOperacao<Void>();
+        resultadoUpload.addErro(ERRO_UPLOAD_TRANSMISSAO);
+        doReturn(resultadoUpload).when(uploadService).carregarArquivo(any(), any(), any());
+
+        var importacaoDTO = gerarImportacaoNovoDTO();
+        var resultado = importacaoService.iniciarImportacao(importacaoDTO);
+
+        var importacaoEntity = importacaoRepository
+                .find("layout = ?1 and nomeArquivo = ?2", layout, importacaoDTO.getNomeArquivo())
+                .firstResult();
+
+        assertEquals(resultadoUpload.getErros(), resultado.getErros());
+        assertEquals(ERRO.name(), importacaoEntity.getSituacao().getDescricao());
     }
 
     /**
