@@ -1,20 +1,14 @@
 package br.com.lczapparolli.service.upload;
 
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_UPLOAD_ARQUIVO_NAO_ENCONTRADO;
-import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_UPLOAD_CONECTAR;
-import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_UPLOAD_TRANSMISSAO;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
 import javax.enterprise.context.ApplicationScoped;
 
 import br.com.lczapparolli.erro.ResultadoOperacao;
-import com.microsoft.azure.storage.CloudStorageAccount;
-import com.microsoft.azure.storage.StorageException;
+import com.azure.storage.blob.BlobServiceClientBuilder;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.slf4j.Logger;
@@ -51,25 +45,19 @@ public class AzureUploadService implements UploadService {
         try {
             var fileInputStream = new FileInputStream(new File(arquivo.uploadedFile().toUri()));
 
-            var storageAccount = CloudStorageAccount.parse(this.storageAccount);
-            var blobClient = storageAccount.createCloudBlobClient();
-            var container = blobClient.getContainerReference(identificacaoLayout);
-            container.createIfNotExists();
+            var service = new BlobServiceClientBuilder()
+                    .connectionString(storageAccount)
+                    .buildClient();
 
-            var blob = container.getBlockBlobReference(nomeArquivo);
+            var container = service.createBlobContainerIfNotExists(identificacaoLayout);
+            var blob = container.getBlobClient(nomeArquivo);
             blob.upload(fileInputStream, arquivo.size());
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Arquivo carregado: {} - Tamanho: {}", nomeArquivo, arquivo.size());
             }
-        } catch (URISyntaxException | InvalidKeyException | StorageException e) {
-            resultadoOperacao.addErro(ERRO_UPLOAD_CONECTAR);
-            LOGGER.error(e.getMessage(), e);
         } catch (FileNotFoundException e) {
             resultadoOperacao.addErro(ERRO_UPLOAD_ARQUIVO_NAO_ENCONTRADO);
-            LOGGER.error(e.getMessage(), e);
-        } catch (IOException e) {
-            resultadoOperacao.addErro(ERRO_UPLOAD_TRANSMISSAO);
             LOGGER.error(e.getMessage(), e);
         }
 
