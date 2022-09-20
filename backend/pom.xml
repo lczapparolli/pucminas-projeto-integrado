@@ -15,7 +15,7 @@
     <quarkus.platform.version>2.10.2.Final</quarkus.platform.version>
     <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
     <lombok.version>1.18.24</lombok.version>
-    <azure-storage.version>8.6.6</azure-storage.version>
+    <azure-storage.version>12.19.1</azure-storage.version>
     <skipITs>true</skipITs>
   </properties>
   <dependencyManagement>
@@ -63,8 +63,8 @@
       <artifactId>quarkus-smallrye-openapi</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.microsoft.azure</groupId>
-      <artifactId>azure-storage</artifactId>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-storage-blob</artifactId>
       <version>${azure-storage.version}</version>
     </dependency>
     <dependency>
