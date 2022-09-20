@@ -20,9 +20,7 @@ public enum ErroAplicacao {
     ERRO_LAYOUT_NAO_ENCONTRADO("O layout informado não existe", true),
     ERRO_CAMPO_NAO_INFORMADO("O campo não foi informado", true),
     ERRO_LAYOUT_DESATIVADO("O layout informado está desativado e não pode ser utilizado", true),
-    ERRO_UPLOAD_CONECTAR("Não foi possível conectar ao serviço de armazenamento de arquivos", false),
-    ERRO_UPLOAD_ARQUIVO_NAO_ENCONTRADO("Não foi possível encontrar o arquivo carregado para enviar ao serviço de armazenamento", false),
-    ERRO_UPLOAD_TRANSMISSAO("Ocorreu um erro ao enviar o arquivo para o serviço de armazenamento", false);
+    ERRO_UPLOAD_ARQUIVO_NAO_ENCONTRADO("Não foi possível encontrar o arquivo carregado para enviar ao serviço de armazenamento", false);
 
     /**
      * Mensagem associada ao erro para ser devolvida ao chamador

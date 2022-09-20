@@ -7,7 +7,7 @@ import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_CAMPO_NAO_INFORMADO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_IMPORTACAO_NAO_INFORMADA;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_LAYOUT_DESATIVADO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_LAYOUT_NAO_ENCONTRADO;
-import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_UPLOAD_TRANSMISSAO;
+import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_UPLOAD_ARQUIVO_NAO_ENCONTRADO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -187,7 +187,7 @@ public class ImportacaoServiceTest {
     public void iniciarImportacao_erroUpload_test() {
         // Configurando mock
         var resultadoUpload = new ResultadoOperacao<Void>();
-        resultadoUpload.addErro(ERRO_UPLOAD_TRANSMISSAO);
+        resultadoUpload.addErro(ERRO_UPLOAD_ARQUIVO_NAO_ENCONTRADO);
         doReturn(resultadoUpload).when(uploadService).carregarArquivo(any(), any(), any());
 
         var importacaoDTO = gerarImportacaoNovoDTO();
