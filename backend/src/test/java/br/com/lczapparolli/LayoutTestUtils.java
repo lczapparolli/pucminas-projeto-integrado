@@ -50,4 +50,15 @@ public class LayoutTestUtils {
         return layout;
     }
 
+    /**
+     * Inicializa a tabela de layouts garantindo o mínimo de itens informado
+     *
+     * @param tamanho Tamanho mínimo da tabela
+     */
+    public void inicializarListaLayout(int tamanho) {
+        for (var i = layoutRepository.count(); i <= tamanho; i++) {
+            gerarNovoLayout();
+        }
+    }
+
 }
