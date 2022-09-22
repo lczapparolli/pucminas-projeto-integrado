@@ -3,11 +3,13 @@ package br.com.lczapparolli.dto;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
+import java.io.InputStream;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
@@ -28,7 +30,7 @@ public class ImportacaoNovoDTO {
      */
     @RestForm("layoutId")
     @PartType(TEXT_PLAIN)
-    @Parameter(name = "layoutId", description = "Identificação do layout a ser utilizado para a importação", example = "1", required = true)
+    @Schema(name = "layoutId", description = "Identificação do layout a ser utilizado para a importação", example = "1", required = true)
     private Integer layoutId;
 
     /**
@@ -36,7 +38,7 @@ public class ImportacaoNovoDTO {
      */
     @RestForm("nomeArquivo")
     @PartType(TEXT_PLAIN)
-    @Parameter(name = "nomeArquivo", description = "Nome do arquivo que será apresentado para identificação", example = "arquivo_importado_1.txt", required = true)
+    @Schema(name = "nomeArquivo", description = "Nome do arquivo que será apresentado para identificação", example = "arquivo_importado_1.txt", required = true)
     private String nomeArquivo;
 
     /**
@@ -44,7 +46,7 @@ public class ImportacaoNovoDTO {
      */
     @RestForm("arquivo")
     @PartType(APPLICATION_OCTET_STREAM)
-    @Parameter(name = "arquivo", description = "Conteúdo do arquivo a ser importado", required = true)
+    @Schema(name = "arquivo", description = "Conteúdo do arquivo a ser importado", implementation = InputStream.class, required = true)
     private FileUpload arquivo;
 
 }
