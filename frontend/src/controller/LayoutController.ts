@@ -1,6 +1,6 @@
 import axios from "axios";
 import Layout from "../model/Layout";
-import { BASE_URL, LAYOUT_URL } from "../Parametros";
+import { LAYOUT_URL } from "../Parametros";
 
 /**
  * Consulta os layouts disponíveis para a importação
