@@ -5,15 +5,15 @@ export default interface Layout {
   /**
    * Identificação única do layout
    */
-  id: Number;
+  id: number;
 
   /**
    * Descrição legível do layout
    */
-  descricao: String;
+  descricao: string;
 
   /**
    * Indicação se o layout está ativo ou não
    */
-  ativo: Boolean;
+  ativo: boolean;
 }
