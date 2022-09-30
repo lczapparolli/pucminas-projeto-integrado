@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "rotinas_importacao": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7218",
+      "launchBrowser": false
+    }
+  }
+}
