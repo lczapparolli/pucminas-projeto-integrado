@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace rotinas_importacao.modelos
@@ -6,16 +8,24 @@ namespace rotinas_importacao.modelos
   [Table("cliente")]
   public class Cliente
   {
-    [Column("cliente_id")]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public long clienteId { get; set; }
+    [Key]
+    [Column("documento")]
+    public long Documento { get; set; }
+    
     [Column("nome")]
-    public string nome { get; set; }
+    public string Nome { get; set; }
+    
     [Column("data_nascimento")]
-    public DateTime dataNascimento { get; set; }
+    public DateTime DataNascimento { get; set; }
+    
     [Column("data_hora_criacao")]
-    public DateTime dataHoraCriacao { get; set; }
+    public DateTime DataHoraCriacao { get; set; }
+    
     [Column("data_hora_atualizacao")]
-    public DateTime? dataHoraAtualizacao { get; set; }
+    public DateTime? DataHoraAtualizacao { get; set; }
+
+    public ICollection<Endereco> Enderecos { get; set; }
+
+    public ICollection<Telefone> Telefones { get; set; }
   }
 }
