@@ -23,6 +23,8 @@ services:
       MYSQL_PASSWORD: crm
     ports:
       - 3307:3306
+    volumes:
+      - "./scripts/crm_database_init.sql:/docker-entrypoint-initdb.d/crm_database_init.sql"
     networks:
       - importacao-distribuida
 
