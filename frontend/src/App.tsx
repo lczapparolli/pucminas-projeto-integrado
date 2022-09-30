@@ -7,11 +7,13 @@ import {
 // Páginas da aplicação
 import About from './page/About';
 import Home from './page/Home';
+import ImportacaoNovo from './page/importacao/novo';
 
 // Definição das rotas
 const router = createBrowserRouter([
   { path: '/'     , element: <Home />  },
-  { path: '/about', element: <About /> }
+  { path: '/about', element: <About /> },
+  { path: '/importacao/novo', element: <ImportacaoNovo /> }
 ]);
 
 function App() {
