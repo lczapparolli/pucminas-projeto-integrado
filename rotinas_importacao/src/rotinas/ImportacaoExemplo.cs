@@ -9,22 +9,44 @@ using System.Linq;
 
 namespace rotinas_importacao.rotinas
 {
+
+  /// <summary>
+  /// Classe de exemplo para a execução de uma importação
+  /// </summary>
   public class ImportacaoExemplo
   {
 
     private readonly CrmContext contexto;
 
+    /// <summary>
+    /// Não executar manualmente. Será invocado para a injeção de dependências
+    /// Cria uma nova instância da classe
+    /// </summary>
+    /// <param name="contexto">Contexto de banco de dados</param>
     public ImportacaoExemplo(CrmContext contexto)
     {
       this.contexto = contexto;
     }
 
+    /// <summary>
+    /// Trigger disparada quando um arquivo for adicionado no contêiner correspondente
+    /// </summary>
+    /// <param name="arquivo">Stream para o arquivo carregado</param>
+    /// <param name="nomeArquivo">Nome do arquivo que foi importado</param>
+    /// <param name="log">Instância injetada para registro do log</param>
     [FunctionName("ImportacaoExemploBlob")]
     public void RunBlobTrigger([BlobTrigger("importacao-exemplo/{nomeArquivo}")] Stream arquivo, string nomeArquivo, ILogger log)
     {
       ProcessarImportacao(arquivo, nomeArquivo, log);
     }
 
+    /// <summary>
+    /// Trigger disparada ao chamar o método POST /importacao-exemplo/{nomeArquivo}
+    /// </summary>
+    /// <param name="req">Dados da requisição HTTP</param>
+    /// <param name="arquivo">Stream para o arquivo a ser importado</param>
+    /// <param name="nomeArquivo">Nome do arquivo que a ser importado</param>
+    /// <param name="log">Instância injetada para registro do log</param>
     [FunctionName("ImportacaoExemploHttp")]
     public void RunHttpTrigger(
         [HttpTrigger("post", Route = "importacao-exemplo/{nomeArquivo}")] HttpRequest req,
@@ -35,6 +57,12 @@ namespace rotinas_importacao.rotinas
       ProcessarImportacao(arquivo, nomeArquivo, log);
     }
 
+    /// <summary>
+    /// Realiza o processo de importação, percorrendo as linhas do arquivo
+    /// </summary>
+    /// <param name="arquivo">Stream com os dados do arquivo</param>
+    /// <param name="nomeArquivo">Nome do arquivo a ser importado</param>
+    /// <param name="log">Instância injetada para registro do log</param>
     private void ProcessarImportacao(Stream arquivo, string nomeArquivo, ILogger log)
     {
       log.LogInformation($"Iniciando importação do arquivo '{nomeArquivo}'");
@@ -44,15 +72,23 @@ namespace rotinas_importacao.rotinas
         {
           var linha = reader.ReadLine();
           ProcessarLinha(linha);
+
+          // Sleep para simular uma carga de trabalho mais pesada
+          System.Threading.Thread.Sleep(1000);
           log.LogInformation($"Linha processada: '{linha}'");
         }
       }
       log.LogInformation($"Processamento do arquivo '{nomeArquivo}' concluído");
     }
 
+    /// <summary>
+    /// Realiza o processamento de uma linha do arquivo, identificando o layout do registro
+    /// </summary>
+    /// <param name="linha">Linha a ser processada</param>
     private void ProcessarLinha(string linha)
     {
       var valores = linha.Split(";");
+
       if (valores[0] == "cliente")
       {
         ProcessarCliente(valores);
@@ -67,9 +103,14 @@ namespace rotinas_importacao.rotinas
       }
     }
 
+    /// <summary>
+    /// Realiza o processamento de um registro de cliente, identificando se é uma inclusão ou alteração
+    /// </summary>
+    /// <param name="valores">Valores presentes no registro</param>
     private void ProcessarCliente(string[] valores)
     {
       var documento = long.Parse(valores[1]);
+
       var cliente = contexto.Clientes.Find(documento);
       if (cliente == null)
       {
@@ -84,12 +125,17 @@ namespace rotinas_importacao.rotinas
       {
         cliente.DataHoraAtualizacao = DateTime.Now;
       }
+      
       cliente.Nome = valores[2].Trim();
       cliente.DataNascimento = DateTime.ParseExact(valores[3], "yyyy-MM-dd", CultureInfo.InvariantCulture);
 
       contexto.SaveChanges();
     }
 
+    /// <summary>
+    /// Realiza o processamento de um registro de endereço, identificando se é uma inclusão ou alteração
+    /// </summary>
+    /// <param name="valores">Valores presentes no registro</param>
     private void ProcessarEndereco(string[] valores)
     {
       var documento = long.Parse(valores[1]);
@@ -137,6 +183,10 @@ namespace rotinas_importacao.rotinas
       contexto.SaveChanges();
     }
 
+    /// <summary>
+    /// Realiza o processamento de um registro de telefone, identificando se é uma inclusão ou alteração
+    /// </summary>
+    /// <param name="valores">Valores presentes no registro</param>
     private void ProcessarTelefone(string[] valores)
     {
       var documento = long.Parse(valores[1]);
