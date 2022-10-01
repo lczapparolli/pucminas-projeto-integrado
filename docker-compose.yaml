@@ -2,7 +2,7 @@ version: '3.1'
 
 services:
 
-  database:
+  database-importacao:
     image: mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -11,6 +11,20 @@ services:
       MYSQL_PASSWORD: importacao_distribuida
     ports:
       - 3306:3306
+    networks:
+      - importacao-distribuida
+
+  database-crm:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: crm
+      MYSQL_USER: crm
+      MYSQL_PASSWORD: crm
+    ports:
+      - 3307:3306
+    volumes:
+      - "./scripts/crm_database_init.sql:/docker-entrypoint-initdb.d/crm_database_init.sql"
     networks:
       - importacao-distribuida
 
