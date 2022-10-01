@@ -7,7 +7,7 @@ import {
 // Páginas da aplicação
 import About from './page/About';
 import Home from './page/Home';
-import ImportacaoNovo from './page/importacao/novo';
+import ImportacaoNovo from './page/importacao/ImportacaoNovo';
 
 // Definição das rotas
 const router = createBrowserRouter([
