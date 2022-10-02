@@ -6,6 +6,8 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using rotinas_importacao.modelos;
 using System.Linq;
+using rotinas_importacao.dtos;
+using rotinas_importacao.servicos;
 
 namespace rotinas_importacao.rotinas
 {
@@ -17,15 +19,17 @@ namespace rotinas_importacao.rotinas
   {
 
     private readonly CrmContext contexto;
+    private readonly IMensageriaService mensageriaService;
 
     /// <summary>
     /// Não executar manualmente. Será invocado para a injeção de dependências
     /// Cria uma nova instância da classe
     /// </summary>
     /// <param name="contexto">Contexto de banco de dados</param>
-    public ImportacaoExemplo(CrmContext contexto)
+    public ImportacaoExemplo(CrmContext contexto, IMensageriaService mensageriaService)
     {
       this.contexto = contexto;
+      this.mensageriaService = mensageriaService;
     }
 
     /// <summary>
@@ -66,18 +70,52 @@ namespace rotinas_importacao.rotinas
     private void ProcessarImportacao(Stream arquivo, string importacaoId, ILogger log)
     {
       log.LogInformation($"Iniciando importação do arquivo '{importacaoId}'");
-      using (var reader = new StreamReader(arquivo))
+      long posicao = 0;
+      try
       {
-        while (!reader.EndOfStream)
+        using (var reader = new StreamReader(arquivo))
         {
-          var linha = reader.ReadLine();
-          ProcessarLinha(linha);
+          // Percorre as linhas do arquivo
+          while (!reader.EndOfStream)
+          {
+            var linha = reader.ReadLine();
+            ProcessarLinha(linha);
 
-          // Sleep para simular uma carga de trabalho mais pesada
-          System.Threading.Thread.Sleep(1000);
-          log.LogInformation($"Linha processada: '{linha}'");
+            // Atualiza a situação do processamento
+            posicao += linha.Length;
+            EnviarAtualizacao(
+              importacaoId: int.Parse(importacaoId),
+              posicao: posicao,
+              tamanho: arquivo.Length,
+              situacao: EventoAtualizacao.Situacao.PROCESSANDO
+            );
+
+            // Sleep para simular uma carga de trabalho mais pesada
+            System.Threading.Thread.Sleep(1000);
+            log.LogInformation($"Processado: Arquivo: {importacaoId} - Linha: '{linha}'");
+          }
         }
       }
+      catch (Exception exception)
+      {
+        log.LogError($"Ocorreu um erro ao processar o arquivo: {importacaoId} - Mensagem: '{exception.Message}'");
+        log.LogError($"Stacktrace: {exception.StackTrace}");
+        // Envia a informação de erro
+        EnviarAtualizacao(
+          importacaoId: int.Parse(importacaoId),
+          posicao: posicao,
+          tamanho: arquivo.Length,
+          situacao: EventoAtualizacao.Situacao.ERRO
+        );
+      }
+
+      // Envia a informação de processamento concluído
+      EnviarAtualizacao(
+        importacaoId: int.Parse(importacaoId),
+        posicao: arquivo.Length,
+        tamanho: arquivo.Length,
+        situacao: EventoAtualizacao.Situacao.SUCESSO
+      );
       log.LogInformation($"Processamento do arquivo '{importacaoId}' concluído");
     }
 
@@ -125,7 +163,7 @@ namespace rotinas_importacao.rotinas
       {
         cliente.DataHoraAtualizacao = DateTime.Now;
       }
-      
+
       cliente.Nome = valores[2].Trim();
       cliente.DataNascimento = DateTime.ParseExact(valores[3], "yyyy-MM-dd", CultureInfo.InvariantCulture);
 
@@ -148,7 +186,7 @@ namespace rotinas_importacao.rotinas
       var cep = int.Parse(valores[8].Trim().Replace("-", ""));
 
       var endereco = contexto.Enderecos
-        .Where(e => e.DocumentoCliente == documento 
+        .Where(e => e.DocumentoCliente == documento
           && e.Logradouro == logradouro
           && e.Numero == numero
           && e.Complemento == complemento
@@ -191,7 +229,7 @@ namespace rotinas_importacao.rotinas
     {
       var documento = long.Parse(valores[1]);
       var numTelefone = valores[2].Trim();
-      var ramal = String.IsNullOrWhiteSpace(valores[3]) ? (int?) null : int.Parse(valores[3].Trim());
+      var ramal = String.IsNullOrWhiteSpace(valores[3]) ? (int?)null : int.Parse(valores[3].Trim());
 
       var ddd = int.Parse(numTelefone.Substring(1, 2));
       var numero = int.Parse(numTelefone.Substring(5).Replace("-", ""));
@@ -222,6 +260,18 @@ namespace rotinas_importacao.rotinas
       telefone.Ramal = ramal;
 
       contexto.SaveChanges();
+    }
+
+    private void EnviarAtualizacao(int importacaoId, long tamanho, long posicao, EventoAtualizacao.Situacao situacao)
+    {
+      var evento = new EventoAtualizacao
+      {
+        importacaoId = importacaoId,
+        posicao = posicao,
+        tamanho = tamanho,
+        situacao = situacao
+      };
+      mensageriaService.EnviarAtualizacao(evento);
     }
   }
 }
