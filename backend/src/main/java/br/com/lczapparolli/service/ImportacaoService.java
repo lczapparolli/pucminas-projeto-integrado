@@ -72,7 +72,7 @@ public class ImportacaoService {
 
         var upload = uploadService.carregarArquivo(
                 importacaoEntity.getLayout().getIdentificacao(),
-                importacaoEntity.getNomeArquivo(),
+                importacaoEntity.getImportacaoId(),
                 importacaoDTO.getArquivo());
         if (upload.possuiErros()) {
             importacaoEntity.setSituacao(obterSituacao(ERRO));

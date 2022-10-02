@@ -32,12 +32,12 @@ namespace rotinas_importacao.rotinas
     /// Trigger disparada quando um arquivo for adicionado no contêiner correspondente
     /// </summary>
     /// <param name="arquivo">Stream para o arquivo carregado</param>
-    /// <param name="nomeArquivo">Nome do arquivo que foi importado</param>
+    /// <param name="importacaoId">Código da importação para identificação</param>
     /// <param name="log">Instância injetada para registro do log</param>
     [FunctionName("ImportacaoExemploBlob")]
-    public void RunBlobTrigger([BlobTrigger("importacao-exemplo/{nomeArquivo}")] Stream arquivo, string nomeArquivo, ILogger log)
+    public void RunBlobTrigger([BlobTrigger("importacao-exemplo/{importacaoId}")] Stream arquivo, string importacaoId, ILogger log)
     {
-      ProcessarImportacao(arquivo, nomeArquivo, log);
+      ProcessarImportacao(arquivo, importacaoId, log);
     }
 
     /// <summary>
@@ -45,16 +45,16 @@ namespace rotinas_importacao.rotinas
     /// </summary>
     /// <param name="req">Dados da requisição HTTP</param>
     /// <param name="arquivo">Stream para o arquivo a ser importado</param>
-    /// <param name="nomeArquivo">Nome do arquivo que a ser importado</param>
+    /// <param name="importacaoId">Código da importação para identificação</param>
     /// <param name="log">Instância injetada para registro do log</param>
     [FunctionName("ImportacaoExemploHttp")]
     public void RunHttpTrigger(
-        [HttpTrigger("post", Route = "importacao-exemplo/{nomeArquivo}")] HttpRequest req,
-        [Blob("importacao-exemplo/{nomeArquivo}", FileAccess.Read)] Stream arquivo,
-        string nomeArquivo,
+        [HttpTrigger("post", Route = "importacao-exemplo/{importacaoId}")] HttpRequest req,
+        [Blob("importacao-exemplo/{importacaoId}", FileAccess.Read)] Stream arquivo,
+        string importacaoId,
         ILogger log)
     {
-      ProcessarImportacao(arquivo, nomeArquivo, log);
+      ProcessarImportacao(arquivo, importacaoId, log);
     }
 
     /// <summary>
@@ -63,9 +63,9 @@ namespace rotinas_importacao.rotinas
     /// <param name="arquivo">Stream com os dados do arquivo</param>
     /// <param name="nomeArquivo">Nome do arquivo a ser importado</param>
     /// <param name="log">Instância injetada para registro do log</param>
-    private void ProcessarImportacao(Stream arquivo, string nomeArquivo, ILogger log)
+    private void ProcessarImportacao(Stream arquivo, string importacaoId, ILogger log)
     {
-      log.LogInformation($"Iniciando importação do arquivo '{nomeArquivo}'");
+      log.LogInformation($"Iniciando importação do arquivo '{importacaoId}'");
       using (var reader = new StreamReader(arquivo))
       {
         while (!reader.EndOfStream)
@@ -78,7 +78,7 @@ namespace rotinas_importacao.rotinas
           log.LogInformation($"Linha processada: '{linha}'");
         }
       }
-      log.LogInformation($"Processamento do arquivo '{nomeArquivo}' concluído");
+      log.LogInformation($"Processamento do arquivo '{importacaoId}' concluído");
     }
 
     /// <summary>
