@@ -17,11 +17,16 @@ namespace rotinas_importacao.servicos
     private readonly bool queueDurable;
     private readonly string exchangeName;
 
+    private readonly JsonSerializerSettings jsonSerializerSettings;
+
     /// <summary>
     /// Inicializa o serviço
     /// </summary>
     public RabbitMQService()
     {
+      jsonSerializerSettings = new JsonSerializerSettings();
+      jsonSerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+
       queueName = Environment.GetEnvironmentVariable("rabbitMQ_queue_name");
       queueDurable = bool.Parse(Environment.GetEnvironmentVariable("rabbitMQ_queue_durable"));
       exchangeName = Environment.GetEnvironmentVariable("rabbitMQ_exchange_name");
@@ -73,7 +78,7 @@ namespace rotinas_importacao.servicos
         exchange: exchangeName,
         routingKey: queueName,
         basicProperties: properties,
-        body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(evento)));
+        body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(evento, jsonSerializerSettings)));
     }
   }
 }
