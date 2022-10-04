@@ -25,10 +25,10 @@ namespace rotinas_importacao.servicos
       queueName = Environment.GetEnvironmentVariable("rabbitMQ_queue_name");
       queueDurable = bool.Parse(Environment.GetEnvironmentVariable("rabbitMQ_queue_durable"));
       exchangeName = Environment.GetEnvironmentVariable("rabbitMQ_exchange_name");
-      
+
       conexao = ObterConexao();
       modelo = conexao.CreateModel();
-      
+
       modelo.QueueDeclare(
         queue: queueName,
         durable: queueDurable,
@@ -66,10 +66,13 @@ namespace rotinas_importacao.servicos
     /// <param name="evento">Objeto com os dados da situação da importação</param>
     public void EnviarAtualizacao(EventoAtualizacao evento)
     {
+      var properties = modelo.CreateBasicProperties();
+      properties.ContentType = "application/json";
+      
       modelo.BasicPublish(
         exchange: exchangeName,
         routingKey: queueName,
-        basicProperties: null,
+        basicProperties: properties,
         body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(evento)));
     }
   }
