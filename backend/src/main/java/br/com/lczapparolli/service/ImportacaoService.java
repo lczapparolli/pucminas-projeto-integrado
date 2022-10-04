@@ -2,6 +2,7 @@ package br.com.lczapparolli.service;
 
 import static br.com.lczapparolli.dominio.Situacao.CANCELADA;
 import static br.com.lczapparolli.dominio.Situacao.ERRO;
+import static br.com.lczapparolli.dominio.Situacao.PAUSADA;
 import static br.com.lczapparolli.dominio.Situacao.PROCESSANDO;
 import static br.com.lczapparolli.dominio.Situacao.SUCESSO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_CAMPO_NAO_INFORMADO;
@@ -13,6 +14,7 @@ import static java.util.Objects.isNull;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
@@ -51,6 +53,7 @@ public class ImportacaoService {
     ImportacaoRepository importacaoRepository;
 
     private static final List<Situacao> fimProcessamento = List.of(SUCESSO, ERRO, CANCELADA);
+    private static final List<Situacao> processamentoAtivo = List.of(PROCESSANDO, PAUSADA);
 
     /**
      * Inicia o processo de importação, salvando os dados necessários no banco de dados
@@ -91,6 +94,27 @@ public class ImportacaoService {
         }
 
         return resultado;
+    }
+
+    /**
+     * Lista as importações conforme o filtro informado
+     *
+     * @param ativo Indica se devem ser filtradas apenas as importações ativas ou finalizadas.
+     *              Se nulo todas as importações são retornadas
+     * @return Retorna a lista de importações encontradas
+     */
+    public ResultadoOperacao<List<ImportacaoEntity>> listarImportacoes(Boolean ativo) {
+        var resultadoOperacao = new ResultadoOperacao<List<ImportacaoEntity>>();
+
+        if (isNull(ativo)) {
+            resultadoOperacao.setResultado(importacaoRepository.listarPorSituacoes(null));
+        } else if (ativo) {
+            resultadoOperacao.setResultado(importacaoRepository.listarPorSituacoes(obterDescricaoSituacoes(processamentoAtivo)));
+        } else {
+            resultadoOperacao.setResultado(importacaoRepository.listarPorSituacoes(obterDescricaoSituacoes(fimProcessamento)));
+        }
+
+        return resultadoOperacao;
     }
 
     /**
@@ -191,6 +215,10 @@ public class ImportacaoService {
         // Considera-se que a situação exista na base,
         // por isso é disparada uma exceção em vez de realizar a validação
         return situacaoService.obterSituacaoEntity(situacao).orElseThrow();
+    }
+
+    private List<String> obterDescricaoSituacoes(List<Situacao> situacoes) {
+        return situacoes.stream().map(Enum::name).collect(Collectors.toList());
     }
 
 }
