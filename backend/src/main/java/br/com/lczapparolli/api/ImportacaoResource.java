@@ -5,7 +5,9 @@ import static br.com.lczapparolli.mapper.ResponseMapper.construirRespostaLista;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_XML;
 import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
+import static javax.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
 import static org.eclipse.microprofile.openapi.annotations.enums.SchemaType.ARRAY;
+import static org.eclipse.microprofile.openapi.annotations.enums.SchemaType.OBJECT;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -19,8 +21,10 @@ import javax.ws.rs.core.Response;
 import br.com.lczapparolli.dto.ErroDTO;
 import br.com.lczapparolli.dto.ImportacaoDetalhadaDTO;
 import br.com.lczapparolli.dto.ImportacaoNovoDTO;
+import br.com.lczapparolli.dto.SituacaoImportacaoDTO;
 import br.com.lczapparolli.mapper.ImportacaoMapper;
 import br.com.lczapparolli.service.ImportacaoService;
+import io.smallrye.mutiny.Multi;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -28,6 +32,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.jboss.resteasy.reactive.MultipartForm;
 
 /**
@@ -41,6 +46,9 @@ public class ImportacaoResource {
 
     @Inject
     ImportacaoService importacaoService;
+
+    @Channel("atualizacao-processamento-in")
+    Multi<SituacaoImportacaoDTO> atualizacoes;
 
     /**
      * Cria uma importação com os dados fornecidos
@@ -79,6 +87,20 @@ public class ImportacaoResource {
             Boolean ativo) {
         var resultado = importacaoService.listarImportacoes(ativo);
         return construirRespostaLista(resultado, ImportacaoMapper::toDTO);
+    }
+
+    /**
+     * Retorna um stream com as atualizações de situação das importações
+     *
+     * @return Stream contínuo com os dados das importações
+     */
+    @GET
+    @Path("/situacao")
+    @Produces({ SERVER_SENT_EVENTS })
+    @Operation(description = "Stream de eventos com as atualizações na situação das importações em processamento")
+    @APIResponse(responseCode = "200", name = "Sucesso", description = "O fluxo de atualizações será enviado assim que disponíveis", content = @Content(schema = @Schema(type = OBJECT, implementation = SituacaoImportacaoDTO.class)))
+    public Multi<SituacaoImportacaoDTO> obterAtualizacoes() {
+        return atualizacoes;
     }
 
 }

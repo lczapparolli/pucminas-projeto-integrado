@@ -31,6 +31,7 @@ import br.com.lczapparolli.service.upload.UploadService;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.vertx.core.json.JsonObject;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
 /**
  * Serviço com regras de negócio para manipulação das importações
@@ -121,12 +122,15 @@ public class ImportacaoService {
      * Realiza o processamento das atualizações de situação das importações
      *
      * @param jsonObject Conteúdo da mensagem, contendo a situação atualizada
+     * @return Retorna o objeto recebido para ser reaproveitado
      */
     @Blocking
     @Incoming("eventos-arquivos")
-    public void receberAtualizacao(JsonObject jsonObject) {
+    @Outgoing("atualizacao-processamento-out")
+    public SituacaoImportacaoDTO receberAtualizacao(JsonObject jsonObject) {
         var atualizacao = jsonObject.mapTo(SituacaoImportacaoDTO.class);
         atualizarStatusImportacao(atualizacao.getImportacaoId(), atualizacao.getSituacao());
+        return atualizacao;
     }
 
     /**
