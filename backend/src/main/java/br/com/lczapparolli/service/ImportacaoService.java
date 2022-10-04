@@ -1,7 +1,9 @@
 package br.com.lczapparolli.service;
 
+import static br.com.lczapparolli.dominio.Situacao.CANCELADA;
 import static br.com.lczapparolli.dominio.Situacao.ERRO;
 import static br.com.lczapparolli.dominio.Situacao.PROCESSANDO;
+import static br.com.lczapparolli.dominio.Situacao.SUCESSO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_CAMPO_NAO_INFORMADO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_IMPORTACAO_NAO_INFORMADA;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_LAYOUT_DESATIVADO;
@@ -9,6 +11,7 @@ import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_LAYOUT_NAO_ENCONTRADO;
 import static java.util.Objects.isNull;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.NoSuchElementException;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -16,12 +19,16 @@ import javax.transaction.Transactional;
 
 import br.com.lczapparolli.dominio.Situacao;
 import br.com.lczapparolli.dto.ImportacaoNovoDTO;
+import br.com.lczapparolli.dto.SituacaoImportacaoDTO;
 import br.com.lczapparolli.entity.ImportacaoEntity;
 import br.com.lczapparolli.entity.LayoutEntity;
 import br.com.lczapparolli.entity.SituacaoEntity;
 import br.com.lczapparolli.erro.ResultadoOperacao;
 import br.com.lczapparolli.repository.ImportacaoRepository;
 import br.com.lczapparolli.service.upload.UploadService;
+import io.smallrye.reactive.messaging.annotations.Blocking;
+import io.vertx.core.json.JsonObject;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 /**
  * Serviço com regras de negócio para manipulação das importações
@@ -42,6 +49,8 @@ public class ImportacaoService {
 
     @Inject
     ImportacaoRepository importacaoRepository;
+
+    private static final List<Situacao> fimProcessamento = List.of(SUCESSO, ERRO, CANCELADA);
 
     /**
      * Inicia o processo de importação, salvando os dados necessários no banco de dados
@@ -82,6 +91,38 @@ public class ImportacaoService {
         }
 
         return resultado;
+    }
+
+    /**
+     * Realiza o processamento das atualizações de situação das importações
+     *
+     * @param jsonObject Conteúdo da mensagem, contendo a situação atualizada
+     */
+    @Blocking
+    @Incoming("eventos-arquivos")
+    public void receberAtualizacao(JsonObject jsonObject) {
+        var atualizacao = jsonObject.mapTo(SituacaoImportacaoDTO.class);
+        atualizarStatusImportacao(atualizacao.getImportacaoId(), atualizacao.getSituacao());
+    }
+
+    /**
+     * Salva os dados da atualização da situação no banco de dados
+     *
+     * @param importacaoId Identificação da importação
+     * @param situacao Situação atual da importação
+     */
+    @Transactional
+    void atualizarStatusImportacao(Integer importacaoId, Situacao situacao) {
+        var importacao = importacaoRepository.findById(importacaoId);
+        if (importacao.getSituacao().getDescricao().equals(situacao.name())) {
+            return;
+        }
+
+        importacao.setSituacao(obterSituacao(situacao));
+        if (fimProcessamento.contains(situacao)) {
+            importacao.setFimImportacao(LocalDateTime.now());
+        }
+        importacaoRepository.persist(importacao);
     }
 
     /**
