@@ -37,8 +37,8 @@ public class ErroDTO {
     private String codigo;
 
     /**
-     * Indicação se o erro foi causado por um dado inválido ou erro da aplicação
+     * Indicação do tipo de erro, de acordo com os status HTTP
      */
-    @Schema(name = "validacao", description = "Indicação se o erro foi causado por um dado inválido ou erro da aplicação", example = "false", required = true)
-    private boolean validacao;
+    @Schema(name = "codigoHttp", description = "Indicação do tipo de erro, de acordo com os status HTTP", example = "400", required = true)
+    private Integer codigoHttp;
 }

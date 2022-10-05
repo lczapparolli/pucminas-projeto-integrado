@@ -28,7 +28,7 @@ public class ResultadoOperacaoTest {
 
         assertEquals(ErroAplicacao.ERRO_DESCONHECIDO.getMensagem(), resultadoOperacao.getErros().get(0).getMensagem());
         assertEquals(ErroAplicacao.ERRO_DESCONHECIDO.getCodigoErro(), resultadoOperacao.getErros().get(0).getCodigo());
-        assertEquals(ErroAplicacao.ERRO_DESCONHECIDO.isValidacao(), resultadoOperacao.getErros().get(0).isValidacao());
+        assertEquals(ErroAplicacao.ERRO_DESCONHECIDO.getStatusHttp().getStatusCode(), resultadoOperacao.getErros().get(0).getCodigoHttp());
         assertNull(resultadoOperacao.getErros().get(0).getCampo());
     }
 
@@ -43,7 +43,7 @@ public class ResultadoOperacaoTest {
 
         assertEquals(ErroAplicacao.ERRO_DESCONHECIDO.getMensagem(), resultadoOperacao.getErros().get(0).getMensagem());
         assertEquals(ErroAplicacao.ERRO_DESCONHECIDO.getCodigoErro(), resultadoOperacao.getErros().get(0).getCodigo());
-        assertEquals(ErroAplicacao.ERRO_DESCONHECIDO.isValidacao(), resultadoOperacao.getErros().get(0).isValidacao());
+        assertEquals(ErroAplicacao.ERRO_DESCONHECIDO.getStatusHttp().getStatusCode(), resultadoOperacao.getErros().get(0).getCodigoHttp());
         assertEquals(campo, resultadoOperacao.getErros().get(0).getCampo());
     }
 
@@ -55,13 +55,13 @@ public class ResultadoOperacaoTest {
         var erro1 = ErroDTO.builder()
                 .campo("campo1")
                 .codigo(ErroAplicacao.ERRO_DESCONHECIDO.getCodigoErro())
-                .validacao(ErroAplicacao.ERRO_DESCONHECIDO.isValidacao())
+                .codigoHttp(ErroAplicacao.ERRO_DESCONHECIDO.getStatusHttp().getStatusCode())
                 .mensagem(ErroAplicacao.ERRO_DESCONHECIDO.getMensagem())
                 .build();
         var erro2 = ErroDTO.builder()
                 .campo("campo2")
                 .codigo(ErroAplicacao.ERRO_DESCONHECIDO.getCodigoErro())
-                .validacao(ErroAplicacao.ERRO_DESCONHECIDO.isValidacao())
+                .codigoHttp(ErroAplicacao.ERRO_DESCONHECIDO.getStatusHttp().getStatusCode())
                 .mensagem(ErroAplicacao.ERRO_DESCONHECIDO.getMensagem())
                 .build();
 

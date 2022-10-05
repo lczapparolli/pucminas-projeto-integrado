@@ -6,6 +6,8 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using rotinas_importacao.modelos;
 using System.Linq;
+using rotinas_importacao.dtos;
+using rotinas_importacao.servicos;
 
 namespace rotinas_importacao.rotinas
 {
@@ -17,27 +19,29 @@ namespace rotinas_importacao.rotinas
   {
 
     private readonly CrmContext contexto;
+    private readonly IMensageriaService mensageriaService;
 
     /// <summary>
     /// Não executar manualmente. Será invocado para a injeção de dependências
     /// Cria uma nova instância da classe
     /// </summary>
     /// <param name="contexto">Contexto de banco de dados</param>
-    public ImportacaoExemplo(CrmContext contexto)
+    public ImportacaoExemplo(CrmContext contexto, IMensageriaService mensageriaService)
     {
       this.contexto = contexto;
+      this.mensageriaService = mensageriaService;
     }
 
     /// <summary>
     /// Trigger disparada quando um arquivo for adicionado no contêiner correspondente
     /// </summary>
     /// <param name="arquivo">Stream para o arquivo carregado</param>
-    /// <param name="nomeArquivo">Nome do arquivo que foi importado</param>
+    /// <param name="importacaoId">Código da importação para identificação</param>
     /// <param name="log">Instância injetada para registro do log</param>
     [FunctionName("ImportacaoExemploBlob")]
-    public void RunBlobTrigger([BlobTrigger("importacao-exemplo/{nomeArquivo}")] Stream arquivo, string nomeArquivo, ILogger log)
+    public void RunBlobTrigger([BlobTrigger("importacao-exemplo/{importacaoId}")] Stream arquivo, string importacaoId, ILogger log)
     {
-      ProcessarImportacao(arquivo, nomeArquivo, log);
+      ProcessarImportacao(arquivo, importacaoId, log);
     }
 
     /// <summary>
@@ -45,16 +49,16 @@ namespace rotinas_importacao.rotinas
     /// </summary>
     /// <param name="req">Dados da requisição HTTP</param>
     /// <param name="arquivo">Stream para o arquivo a ser importado</param>
-    /// <param name="nomeArquivo">Nome do arquivo que a ser importado</param>
+    /// <param name="importacaoId">Código da importação para identificação</param>
     /// <param name="log">Instância injetada para registro do log</param>
     [FunctionName("ImportacaoExemploHttp")]
     public void RunHttpTrigger(
-        [HttpTrigger("post", Route = "importacao-exemplo/{nomeArquivo}")] HttpRequest req,
-        [Blob("importacao-exemplo/{nomeArquivo}", FileAccess.Read)] Stream arquivo,
-        string nomeArquivo,
+        [HttpTrigger("post", Route = "importacao-exemplo/{importacaoId}")] HttpRequest req,
+        [Blob("importacao-exemplo/{importacaoId}", FileAccess.Read)] Stream arquivo,
+        string importacaoId,
         ILogger log)
     {
-      ProcessarImportacao(arquivo, nomeArquivo, log);
+      ProcessarImportacao(arquivo, importacaoId, log);
     }
 
     /// <summary>
@@ -63,22 +67,56 @@ namespace rotinas_importacao.rotinas
     /// <param name="arquivo">Stream com os dados do arquivo</param>
     /// <param name="nomeArquivo">Nome do arquivo a ser importado</param>
     /// <param name="log">Instância injetada para registro do log</param>
-    private void ProcessarImportacao(Stream arquivo, string nomeArquivo, ILogger log)
+    private void ProcessarImportacao(Stream arquivo, string importacaoId, ILogger log)
     {
-      log.LogInformation($"Iniciando importação do arquivo '{nomeArquivo}'");
-      using (var reader = new StreamReader(arquivo))
+      log.LogInformation($"Iniciando importação do arquivo '{importacaoId}'");
+      long posicao = 0;
+      try
       {
-        while (!reader.EndOfStream)
+        using (var reader = new StreamReader(arquivo))
         {
-          var linha = reader.ReadLine();
-          ProcessarLinha(linha);
+          // Percorre as linhas do arquivo
+          while (!reader.EndOfStream)
+          {
+            var linha = reader.ReadLine();
+            ProcessarLinha(linha);
 
-          // Sleep para simular uma carga de trabalho mais pesada
-          System.Threading.Thread.Sleep(1000);
-          log.LogInformation($"Linha processada: '{linha}'");
+            // Atualiza a situação do processamento
+            posicao += linha.Length;
+            EnviarAtualizacao(
+              importacaoId: int.Parse(importacaoId),
+              posicao: posicao,
+              tamanho: arquivo.Length,
+              situacao: EventoAtualizacao.Situacao.PROCESSANDO
+            );
+
+            // Sleep para simular uma carga de trabalho mais pesada
+            System.Threading.Thread.Sleep(1000);
+            log.LogInformation($"Processado: Arquivo: {importacaoId} - Linha: '{linha}'");
+          }
         }
       }
-      log.LogInformation($"Processamento do arquivo '{nomeArquivo}' concluído");
+      catch (Exception exception)
+      {
+        log.LogError($"Ocorreu um erro ao processar o arquivo: {importacaoId} - Mensagem: '{exception.Message}'");
+        log.LogError($"Stacktrace: {exception.StackTrace}");
+        // Envia a informação de erro
+        EnviarAtualizacao(
+          importacaoId: int.Parse(importacaoId),
+          posicao: posicao,
+          tamanho: arquivo.Length,
+          situacao: EventoAtualizacao.Situacao.ERRO
+        );
+      }
+
+      // Envia a informação de processamento concluído
+      EnviarAtualizacao(
+        importacaoId: int.Parse(importacaoId),
+        posicao: arquivo.Length,
+        tamanho: arquivo.Length,
+        situacao: EventoAtualizacao.Situacao.SUCESSO
+      );
+      log.LogInformation($"Processamento do arquivo '{importacaoId}' concluído");
     }
 
     /// <summary>
@@ -125,7 +163,7 @@ namespace rotinas_importacao.rotinas
       {
         cliente.DataHoraAtualizacao = DateTime.Now;
       }
-      
+
       cliente.Nome = valores[2].Trim();
       cliente.DataNascimento = DateTime.ParseExact(valores[3], "yyyy-MM-dd", CultureInfo.InvariantCulture);
 
@@ -148,7 +186,7 @@ namespace rotinas_importacao.rotinas
       var cep = int.Parse(valores[8].Trim().Replace("-", ""));
 
       var endereco = contexto.Enderecos
-        .Where(e => e.DocumentoCliente == documento 
+        .Where(e => e.DocumentoCliente == documento
           && e.Logradouro == logradouro
           && e.Numero == numero
           && e.Complemento == complemento
@@ -191,7 +229,7 @@ namespace rotinas_importacao.rotinas
     {
       var documento = long.Parse(valores[1]);
       var numTelefone = valores[2].Trim();
-      var ramal = String.IsNullOrWhiteSpace(valores[3]) ? (int?) null : int.Parse(valores[3].Trim());
+      var ramal = String.IsNullOrWhiteSpace(valores[3]) ? (int?)null : int.Parse(valores[3].Trim());
 
       var ddd = int.Parse(numTelefone.Substring(1, 2));
       var numero = int.Parse(numTelefone.Substring(5).Replace("-", ""));
@@ -222,6 +260,18 @@ namespace rotinas_importacao.rotinas
       telefone.Ramal = ramal;
 
       contexto.SaveChanges();
+    }
+
+    private void EnviarAtualizacao(int importacaoId, long tamanho, long posicao, EventoAtualizacao.Situacao situacao)
+    {
+      var evento = new EventoAtualizacao
+      {
+        importacaoId = importacaoId,
+        posicao = posicao,
+        tamanho = tamanho,
+        situacao = situacao
+      };
+      mensageriaService.EnviarAtualizacao(evento);
     }
   }
 }

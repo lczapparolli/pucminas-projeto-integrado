@@ -3,6 +3,7 @@ using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using rotinas_importacao.modelos;
+using rotinas_importacao.servicos;
 
 [assembly: FunctionsStartup(typeof(rotinas_importacao.StartUp))]
 
@@ -20,7 +21,7 @@ namespace rotinas_importacao
       var serverVersion = ServerVersion.AutoDetect(connectionString);
       
       builder.Services.AddDbContext<CrmContext>(options => options.UseMySql(connectionString, serverVersion));
-      builder.Services.AddLogging();
+      builder.Services.AddScoped<IMensageriaService, RabbitMQService>();
     }
   }
 }

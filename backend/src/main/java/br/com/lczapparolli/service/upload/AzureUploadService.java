@@ -34,12 +34,12 @@ public class AzureUploadService implements UploadService {
      * Envia o arquivo informado para o Blob storage da Azure
      *
      * @param identificacaoLayout Identificação do layout para separação no serviço
-     * @param nomeArquivo Nome do arquivo a ser apresentado
+     * @param importacaoId Identificação da importação para controle
      * @param arquivo Conteúdo do arquivo a ser carregado
      * @return Retorna os possíveis erros encontrados ao carregar o arquivo
      */
     @Override
-    public ResultadoOperacao<Void> carregarArquivo(String identificacaoLayout, String nomeArquivo, FileUpload arquivo) {
+    public ResultadoOperacao<Void> carregarArquivo(String identificacaoLayout, Integer importacaoId, FileUpload arquivo) {
         var resultadoOperacao = new ResultadoOperacao<Void>();
 
         try {
@@ -50,11 +50,11 @@ public class AzureUploadService implements UploadService {
                     .buildClient();
 
             var container = service.createBlobContainerIfNotExists(identificacaoLayout);
-            var blob = container.getBlobClient(nomeArquivo);
+            var blob = container.getBlobClient(importacaoId.toString());
             blob.upload(fileInputStream, arquivo.size());
 
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Arquivo carregado: {} - Tamanho: {}", nomeArquivo, arquivo.size());
+                LOGGER.debug("Arquivo carregado: {} - Tamanho: {}", arquivo.name(), arquivo.size());
             }
         } catch (FileNotFoundException e) {
             resultadoOperacao.addErro(ERRO_UPLOAD_ARQUIVO_NAO_ENCONTRADO);

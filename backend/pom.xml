@@ -6,17 +6,17 @@
   <artifactId>importacao-distribuida</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <properties>
+    <azure-storage.version>12.19.1</azure-storage.version>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>
+    <lombok.version>1.18.24</lombok.version>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.version>2.10.2.Final</quarkus.platform.version>
-    <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
-    <lombok.version>1.18.24</lombok.version>
-    <azure-storage.version>12.19.1</azure-storage.version>
     <skipITs>true</skipITs>
+    <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -71,6 +71,10 @@
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <version>${lombok.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>

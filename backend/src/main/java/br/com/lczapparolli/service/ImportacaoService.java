@@ -1,27 +1,38 @@
 package br.com.lczapparolli.service;
 
+import static br.com.lczapparolli.dominio.Situacao.CANCELADA;
 import static br.com.lczapparolli.dominio.Situacao.ERRO;
+import static br.com.lczapparolli.dominio.Situacao.PAUSADA;
 import static br.com.lczapparolli.dominio.Situacao.PROCESSANDO;
+import static br.com.lczapparolli.dominio.Situacao.SUCESSO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_CAMPO_NAO_INFORMADO;
+import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_IMPORTACAO_NAO_ENCONTRADA;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_IMPORTACAO_NAO_INFORMADA;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_LAYOUT_DESATIVADO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_LAYOUT_NAO_ENCONTRADO;
 import static java.util.Objects.isNull;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 
 import br.com.lczapparolli.dominio.Situacao;
 import br.com.lczapparolli.dto.ImportacaoNovoDTO;
+import br.com.lczapparolli.dto.SituacaoImportacaoDTO;
 import br.com.lczapparolli.entity.ImportacaoEntity;
 import br.com.lczapparolli.entity.LayoutEntity;
 import br.com.lczapparolli.entity.SituacaoEntity;
 import br.com.lczapparolli.erro.ResultadoOperacao;
 import br.com.lczapparolli.repository.ImportacaoRepository;
 import br.com.lczapparolli.service.upload.UploadService;
+import io.smallrye.reactive.messaging.annotations.Blocking;
+import io.vertx.core.json.JsonObject;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
 /**
  * Serviço com regras de negócio para manipulação das importações
@@ -42,6 +53,9 @@ public class ImportacaoService {
 
     @Inject
     ImportacaoRepository importacaoRepository;
+
+    private static final List<Situacao> fimProcessamento = List.of(SUCESSO, ERRO, CANCELADA);
+    private static final List<Situacao> processamentoAtivo = List.of(PROCESSANDO, PAUSADA);
 
     /**
      * Inicia o processo de importação, salvando os dados necessários no banco de dados
@@ -72,7 +86,7 @@ public class ImportacaoService {
 
         var upload = uploadService.carregarArquivo(
                 importacaoEntity.getLayout().getIdentificacao(),
-                importacaoEntity.getNomeArquivo(),
+                importacaoEntity.getImportacaoId(),
                 importacaoDTO.getArquivo());
         if (upload.possuiErros()) {
             importacaoEntity.setSituacao(obterSituacao(ERRO));
@@ -82,6 +96,81 @@ public class ImportacaoService {
         }
 
         return resultado;
+    }
+
+    /**
+     * Lista as importações conforme o filtro informado
+     *
+     * @param ativo Indica se devem ser filtradas apenas as importações ativas ou finalizadas.
+     *              Se nulo todas as importações são retornadas
+     * @return Retorna a lista de importações encontradas
+     */
+    public ResultadoOperacao<List<ImportacaoEntity>> listarImportacoes(Boolean ativo) {
+        var resultadoOperacao = new ResultadoOperacao<List<ImportacaoEntity>>();
+
+        if (isNull(ativo)) {
+            resultadoOperacao.setResultado(importacaoRepository.listarPorSituacoes(null));
+        } else if (ativo) {
+            resultadoOperacao.setResultado(importacaoRepository.listarPorSituacoes(obterDescricaoSituacoes(processamentoAtivo)));
+        } else {
+            resultadoOperacao.setResultado(importacaoRepository.listarPorSituacoes(obterDescricaoSituacoes(fimProcessamento)));
+        }
+
+        return resultadoOperacao;
+    }
+
+    /**
+     * Consulta uma única importação pelo ID informado
+     *
+     * @param importacaoId Identificação da importação a ser consultado
+     * @return Retorna os dados da importação
+     */
+    public ResultadoOperacao<ImportacaoEntity> obterImportacao(Integer importacaoId) {
+        var resultadoOperacao = new ResultadoOperacao<ImportacaoEntity>();
+
+        var importacaoOptional = importacaoRepository.findByIdOptional(importacaoId);
+        if (importacaoOptional.isEmpty()) {
+            resultadoOperacao.addErro(ERRO_IMPORTACAO_NAO_ENCONTRADA, "importacaoId");
+            return resultadoOperacao;
+        }
+
+        resultadoOperacao.setResultado(importacaoOptional.get());
+        return resultadoOperacao;
+    }
+
+    /**
+     * Realiza o processamento das atualizações de situação das importações
+     *
+     * @param jsonObject Conteúdo da mensagem, contendo a situação atualizada
+     * @return Retorna o objeto recebido para ser reaproveitado
+     */
+    @Blocking
+    @Incoming("eventos-arquivos")
+    @Outgoing("atualizacao-processamento-out")
+    public SituacaoImportacaoDTO receberAtualizacao(JsonObject jsonObject) {
+        var atualizacao = jsonObject.mapTo(SituacaoImportacaoDTO.class);
+        atualizarStatusImportacao(atualizacao.getImportacaoId(), atualizacao.getSituacao());
+        return atualizacao;
+    }
+
+    /**
+     * Salva os dados da atualização da situação no banco de dados
+     *
+     * @param importacaoId Identificação da importação
+     * @param situacao Situação atual da importação
+     */
+    @Transactional
+    void atualizarStatusImportacao(Integer importacaoId, Situacao situacao) {
+        var importacao = importacaoRepository.findById(importacaoId);
+        if (importacao.getSituacao().getDescricao().equals(situacao.name())) {
+            return;
+        }
+
+        importacao.setSituacao(obterSituacao(situacao));
+        if (fimProcessamento.contains(situacao)) {
+            importacao.setFimImportacao(LocalDateTime.now());
+        }
+        importacaoRepository.persist(importacao);
     }
 
     /**
@@ -150,6 +239,10 @@ public class ImportacaoService {
         // Considera-se que a situação exista na base,
         // por isso é disparada uma exceção em vez de realizar a validação
         return situacaoService.obterSituacaoEntity(situacao).orElseThrow();
+    }
+
+    private List<String> obterDescricaoSituacoes(List<Situacao> situacoes) {
+        return situacoes.stream().map(Enum::name).collect(Collectors.toList());
     }
 
 }

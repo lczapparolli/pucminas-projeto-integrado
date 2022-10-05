@@ -91,7 +91,7 @@ public class ImportacaoServiceTest {
         // Verifica se o serviço de upload foi chamado
         verify(uploadService).carregarArquivo(
                 eq(importacaoEntity.get().getLayout().getIdentificacao()),
-                eq(importacaoEntity.get().getNomeArquivo()),
+                eq(importacaoEntity.get().getImportacaoId()),
                 eq(importacaoDTO.getArquivo()));
     }
 

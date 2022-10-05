@@ -7,13 +7,15 @@ import {
 // Páginas da aplicação
 import About from './page/About';
 import Home from './page/Home';
-import ImportacaoNovo from './page/importacao/novo';
+import ImportacaoNovo from './page/importacao/ImportacaoNovo';
+import ImportacaoListar from './page/importacao/ImportacaoListar';
 
 // Definição das rotas
 const router = createBrowserRouter([
   { path: '/'     , element: <Home />  },
   { path: '/about', element: <About /> },
-  { path: '/importacao/novo', element: <ImportacaoNovo /> }
+  { path: '/importacao/novo', element: <ImportacaoNovo /> },
+  { path: '/importacao/listar', element: <ImportacaoListar /> }
 ]);
 
 function App() {
