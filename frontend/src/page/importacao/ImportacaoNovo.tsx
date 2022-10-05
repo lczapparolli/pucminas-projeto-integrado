@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import Col  from "react-bootstrap/Col";
 import Container  from "react-bootstrap/Container";
@@ -20,6 +21,8 @@ export default function ImportacaoNovo() {
   const [erros, setErros] = useState({ layout: "", arquivo: "" });
   const [arquivo, setArquivo] = useState<File>();
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     listarLayoutsAtivos().then(resultado => setLayouts(resultado));
   }, []);
@@ -39,16 +42,18 @@ export default function ImportacaoNovo() {
     return (!novosErros.layout && !novosErros.arquivo);
   }
 
-  const formSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const formSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!validarInputs()) {
       return;
     }
 
-    criarImportacao({
+    await criarImportacao({
       layoutId: layoutId ?? 0,
       arquivo: arquivo!
     });
+
+    navigate("/importacao/listar");
   }
 
   const layoutChange = (event: React.FormEvent<HTMLSelectElement>) => {

@@ -1,5 +1,7 @@
 import axios from "axios";
+import Importacao from "../model/Importacao";
 import NovaImportacao from "../model/NovaImportacao";
+import SituacaoImportacao from "../model/SituacaoImportacao";
 import { IMPORTACAO_URL } from "../Parametros";
 
 /**
@@ -22,4 +24,33 @@ export async function criarImportacao(importacao: NovaImportacao) {
       "Content-Type": "multipart/form-data"
     }
   });
+}
+
+/**
+ * Consulta uma importação
+ * 
+ * @param importacaoId Identificação da importação a ser consultada
+ * @returns Retorna a importação encontrada
+ */
+export async function consultarImportacao(importacaoId: number): Promise<Importacao> {
+  var resultado = await axios.get<Importacao>(`${IMPORTACAO_URL}/${importacaoId}`,
+    {
+      headers: { "Accept": "application/json" }
+    });
+
+  return resultado.data;
+}
+
+/**
+ * Realiza a consulta de atualizações das importações de forma contínua
+ * 
+ * @param proc Função a ser processada quando houver um novo evento for recebido
+ * @returns Retorna a referência ao evento para cancelamento
+ */
+export function obterAtualizacoes(proc: (data: SituacaoImportacao) => void): EventSource {
+  var eventSource = new EventSource(`${IMPORTACAO_URL}/situacao`, { withCredentials: false });
+  eventSource.onmessage = (message) => {
+    proc(JSON.parse(message.data))
+  }
+  return eventSource;
 }

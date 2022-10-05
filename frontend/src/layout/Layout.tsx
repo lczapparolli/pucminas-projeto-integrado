@@ -19,6 +19,7 @@ function Layout(props: React.PropsWithChildren): any {
             <Dropdown as={NavItem}>
               <Dropdown.Toggle as={NavLink}>Importações</Dropdown.Toggle>
               <Dropdown.Menu>
+                <Dropdown.Item as={Link} to="/importacao/listar">Importações em progresso</Dropdown.Item>
                 <Dropdown.Item as={Link} to="/importacao/novo">Nova importação</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
