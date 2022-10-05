@@ -14,6 +14,7 @@ export async function criarImportacao(importacao: NovaImportacao) {
     throw new Error("Id do layout não informado");
   }
 
+  // Monta os dados da requisição
   const dados = new FormData();
   dados.append("layoutId", importacao.layoutId.toString());
   dados.append("arquivo", importacao.arquivo!);
@@ -49,8 +50,10 @@ export async function consultarImportacao(importacaoId: number): Promise<Importa
  */
 export function obterAtualizacoes(proc: (data: SituacaoImportacao) => void): EventSource {
   var eventSource = new EventSource(`${IMPORTACAO_URL}/situacao`, { withCredentials: false });
+  
   eventSource.onmessage = (message) => {
     proc(JSON.parse(message.data))
   }
+
   return eventSource;
 }

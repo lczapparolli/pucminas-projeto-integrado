@@ -15,6 +15,11 @@ import { listarLayoutsAtivos } from "../../controller/LayoutController";
 
 import LayoutModel from "../../model/Layout";
 
+/**
+ * Página para carregamento de um arquivo e início de uma importação
+ * 
+ * @returns Retorna o componente da página
+ */
 export default function ImportacaoNovo() {
   const [layouts, setLayouts] = useState<LayoutModel[]>([]);
   const [layoutId, setLayoutId] = useState<number>();
@@ -23,10 +28,18 @@ export default function ImportacaoNovo() {
 
   const navigate = useNavigate();
 
+  /**
+   * Obtém a lista de layouts disponíveis
+   */
   useEffect(() => {
     listarLayoutsAtivos().then(resultado => setLayouts(resultado));
   }, []);
 
+  /**
+   * Valida os dados fornecidos para os campos do formulário
+   * 
+   * @returns Retorna `true` caso os campos estejam corretos, `false` caso haja algum erro
+   */
   const validarInputs = (): boolean => {
     const novosErros = { layout: "", arquivo: "" };
 
@@ -42,25 +55,43 @@ export default function ImportacaoNovo() {
     return (!novosErros.layout && !novosErros.arquivo);
   }
 
+  /**
+   * Processa a submissão do form, enviando os dados para o servidor
+   * 
+   * @param event Objeto contendo os dados do evento
+   * @returns Retorna um Promise para quando o método é completado
+   */
   const formSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!validarInputs()) {
       return;
     }
 
+    // Envia os dados para o servidor
     await criarImportacao({
       layoutId: layoutId ?? 0,
       arquivo: arquivo!
     });
 
+    // Redireciona para a página de acompanhamento
     navigate("/importacao/listar");
   }
 
+  /**
+   * Trata a alteração no campo de layout
+   * 
+   * @param event Objeto contendo os dados do evento
+   */
   const layoutChange = (event: React.FormEvent<HTMLSelectElement>) => {
     const id = Number.parseFloat(event.currentTarget.value);
     setLayoutId(id);
   }
 
+  /**
+   * Trata a alteração no campo de arquivo
+   * 
+   * @param event Objeto contendo os dados do evento
+   */
   const arquivoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setArquivo(event.currentTarget.files?.item(0) ?? undefined);
   }
