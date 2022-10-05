@@ -6,6 +6,7 @@ import static br.com.lczapparolli.dominio.Situacao.PAUSADA;
 import static br.com.lczapparolli.dominio.Situacao.PROCESSANDO;
 import static br.com.lczapparolli.dominio.Situacao.SUCESSO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_CAMPO_NAO_INFORMADO;
+import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_IMPORTACAO_NAO_ENCONTRADA;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_IMPORTACAO_NAO_INFORMADA;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_LAYOUT_DESATIVADO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_LAYOUT_NAO_ENCONTRADO;
@@ -115,6 +116,25 @@ public class ImportacaoService {
             resultadoOperacao.setResultado(importacaoRepository.listarPorSituacoes(obterDescricaoSituacoes(fimProcessamento)));
         }
 
+        return resultadoOperacao;
+    }
+
+    /**
+     * Consulta uma única importação pelo ID informado
+     *
+     * @param importacaoId Identificação da importação a ser consultado
+     * @return Retorna os dados da importação
+     */
+    public ResultadoOperacao<ImportacaoEntity> obterImportacao(Integer importacaoId) {
+        var resultadoOperacao = new ResultadoOperacao<ImportacaoEntity>();
+
+        var importacaoOptional = importacaoRepository.findByIdOptional(importacaoId);
+        if (importacaoOptional.isEmpty()) {
+            resultadoOperacao.addErro(ERRO_IMPORTACAO_NAO_ENCONTRADA, "importacaoId");
+            return resultadoOperacao;
+        }
+
+        resultadoOperacao.setResultado(importacaoOptional.get());
         return resultadoOperacao;
     }
 

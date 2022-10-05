@@ -14,6 +14,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
@@ -87,6 +88,29 @@ public class ImportacaoResource {
             Boolean ativo) {
         var resultado = importacaoService.listarImportacoes(ativo);
         return construirRespostaLista(resultado, ImportacaoMapper::toDTO);
+    }
+
+    /**
+     * Consulta uma importação de acordo com a identificação informada
+     *
+     * @param importacaoId Identificação da importação a ser consultada
+     * @return Retorna a importação encontrada
+     */
+    @GET
+    @Path("/{importacaoId}")
+    @Produces({APPLICATION_JSON, APPLICATION_XML})
+    @Operation(description = "Consulta uma importação de acordo com a identificação informada")
+    @APIResponse(responseCode = "200", name = "Sucesso", description = "O sistema conseguiu encontrar a importação solicitada", content = @Content(schema = @Schema(type = OBJECT, implementation = ImportacaoDetalhadaDTO.class)))
+    @APIResponse(responseCode = "400", name = "Dados inválidos", description = "Os dados informados na requisição não são válidos", content = @Content(schema = @Schema(type = ARRAY, implementation = ErroDTO.class)))
+    @APIResponse(responseCode = "404", name = "Registro não encontrado", description = "Não foi encontrado um registro com os dados solicitados", content = @Content(schema = @Schema(type = ARRAY, implementation = ErroDTO.class)))
+    @APIResponse(responseCode = "500", name = "Erro interno", description = "Ocorreu um erro internamente que impediu o processamento da solicitação", content = @Content(schema = @Schema(type = ARRAY, implementation = ErroDTO.class)))
+    public Response obterImportacao(
+            @Parameter(name = "importacaoId", description = "Identificação da importação a ser pesquisada", example = "1", required = true)
+            @PathParam("importacaoId")
+            Integer importacaoId
+    ) {
+        var resultado = importacaoService.obterImportacao(importacaoId);
+        return construirResposta(resultado, ImportacaoMapper::toDTO);
     }
 
     /**
