@@ -2,7 +2,6 @@ package br.com.lczapparolli.mapper;
 
 import static java.util.Objects.isNull;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 import java.util.List;
 import java.util.function.Function;
@@ -91,9 +90,15 @@ public final class ResponseMapper {
      * @return Retorna o objeto da resposta construído
      */
     public static Response construirRespostaErro(ResultadoOperacao<?> resultadoOperacao) {
-        var possuiErroValidacao = resultadoOperacao.getErros().stream().anyMatch(ErroDTO::isValidacao);
+        var status = BAD_REQUEST;
+
+        var codigosHttp = resultadoOperacao.getErros().stream().map(ErroDTO::getCodigoHttp).distinct().toList();
+        if (codigosHttp.size() == 1) {
+            status = Response.Status.fromStatusCode(codigosHttp.get(0));
+        }
+
         return Response
-                .status(possuiErroValidacao ? BAD_REQUEST : INTERNAL_SERVER_ERROR)
+                .status(status)
                 .entity(resultadoOperacao.getErros())
                 .build();
     }

@@ -81,7 +81,7 @@ public class ImportacaoResourceTest {
                 .body("[0].campo", is(resultadoOperacao.getErros().get(0).getCampo()))
                 .body("[0].mensagem", is(resultadoOperacao.getErros().get(0).getMensagem()))
                 .body("[0].codigo", is(resultadoOperacao.getErros().get(0).getCodigo()))
-                .body("[0].validacao", is(resultadoOperacao.getErros().get(0).isValidacao()));
+                .body("[0].codigoHttp", is(resultadoOperacao.getErros().get(0).getCodigoHttp()));
     }
 
     /**
@@ -103,6 +103,6 @@ public class ImportacaoResourceTest {
                 .body("[0].campo", is(resultadoOperacao.getErros().get(0).getCampo()))
                 .body("[0].mensagem", is(resultadoOperacao.getErros().get(0).getMensagem()))
                 .body("[0].codigo", is(resultadoOperacao.getErros().get(0).getCodigo()))
-                .body("[0].validacao", is(resultadoOperacao.getErros().get(0).isValidacao()));
+                .body("[0].codigoHttp", is(resultadoOperacao.getErros().get(0).getCodigoHttp()));
     }
 }

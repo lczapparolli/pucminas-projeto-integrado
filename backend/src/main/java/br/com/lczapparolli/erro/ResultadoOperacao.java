@@ -82,7 +82,7 @@ public class ResultadoOperacao<T> {
     public ResultadoOperacao<T> addErro(ErroAplicacao erroAplicacao, String campo) {
         return addErro(ErroDTO.builder()
                 .mensagem(erroAplicacao.getMensagem())
-                .validacao(erroAplicacao.isValidacao())
+                .codigoHttp(erroAplicacao.getStatusHttp().getStatusCode())
                 .codigo(erroAplicacao.getCodigoErro())
                 .campo(campo)
                 .build());
