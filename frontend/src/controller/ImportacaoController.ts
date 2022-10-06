@@ -57,3 +57,12 @@ export function obterAtualizacoes(proc: (data: SituacaoImportacao) => void): Eve
 
   return eventSource;
 }
+
+/**
+ * Realiza o cancelamento de uma importação. Interrompendo o processamento
+ * 
+ * @param importacaoId Identificação da importação a ser cancelada
+ */
+export async function cancelarImportacao(importacaoId: number) {
+  await axios.post(`${IMPORTACAO_URL}/${importacaoId}/cancelar`);
+}
