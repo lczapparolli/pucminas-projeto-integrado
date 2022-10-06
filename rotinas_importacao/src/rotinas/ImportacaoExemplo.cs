@@ -8,6 +8,7 @@ using rotinas_importacao.modelos;
 using System.Linq;
 using rotinas_importacao.dtos;
 using rotinas_importacao.servicos;
+using System.Threading;
 
 namespace rotinas_importacao.rotinas
 {
@@ -18,8 +19,16 @@ namespace rotinas_importacao.rotinas
   public class ImportacaoExemplo
   {
 
+    const string IDENTIFICACAO_LAYOUT = "importacao-exemplo";
+    const string ROTA_EXECUCAO = IDENTIFICACAO_LAYOUT + "/{importacaoId}";
+
     private readonly CrmContext contexto;
     private readonly IMensageriaService mensageriaService;
+    private readonly CancellationTokenSource cancellationTokenSource;
+
+    private int importacaoId;
+    private long tamanho;
+    private long posicao;
 
     /// <summary>
     /// Não executar manualmente. Será invocado para a injeção de dependências
@@ -28,6 +37,7 @@ namespace rotinas_importacao.rotinas
     /// <param name="contexto">Contexto de banco de dados</param>
     public ImportacaoExemplo(CrmContext contexto, IMensageriaService mensageriaService)
     {
+      this.cancellationTokenSource = new CancellationTokenSource();
       this.contexto = contexto;
       this.mensageriaService = mensageriaService;
     }
@@ -39,7 +49,7 @@ namespace rotinas_importacao.rotinas
     /// <param name="importacaoId">Código da importação para identificação</param>
     /// <param name="log">Instância injetada para registro do log</param>
     [FunctionName("ImportacaoExemploBlob")]
-    public void RunBlobTrigger([BlobTrigger("importacao-exemplo/{importacaoId}")] Stream arquivo, string importacaoId, ILogger log)
+    public void RunBlobTrigger([BlobTrigger(ROTA_EXECUCAO)] Stream arquivo, string importacaoId, ILogger log)
     {
       ProcessarImportacao(arquivo, importacaoId, log);
     }
@@ -53,8 +63,8 @@ namespace rotinas_importacao.rotinas
     /// <param name="log">Instância injetada para registro do log</param>
     [FunctionName("ImportacaoExemploHttp")]
     public void RunHttpTrigger(
-        [HttpTrigger("post", Route = "importacao-exemplo/{importacaoId}")] HttpRequest req,
-        [Blob("importacao-exemplo/{importacaoId}", FileAccess.Read)] Stream arquivo,
+        [HttpTrigger("post", Route = ROTA_EXECUCAO)] HttpRequest req,
+        [Blob(ROTA_EXECUCAO, FileAccess.Read)] Stream arquivo,
         string importacaoId,
         ILogger log)
     {
@@ -69,8 +79,15 @@ namespace rotinas_importacao.rotinas
     /// <param name="log">Instância injetada para registro do log</param>
     private void ProcessarImportacao(Stream arquivo, string importacaoId, ILogger log)
     {
+      this.importacaoId = int.Parse(importacaoId);
+      this.tamanho = arquivo.Length;
+      this.posicao = 0;
+
+      // Inicia o processo de recebimento de comandos
+      var token = cancellationTokenSource.Token;
+      mensageriaService.ReceberComando(IDENTIFICACAO_LAYOUT, this.importacaoId, EventoComandoRecebido);
+
       log.LogInformation($"Iniciando importação do arquivo '{importacaoId}'");
-      long posicao = 0;
       try
       {
         using (var reader = new StreamReader(arquivo))
@@ -78,21 +95,16 @@ namespace rotinas_importacao.rotinas
           // Percorre as linhas do arquivo
           while (!reader.EndOfStream)
           {
+            // Veririca se a importação foi cancelada
+            if (token.IsCancellationRequested)
+            {
+              log.LogInformation($"Processamento do arquivo cancelado");
+              EnviarAtualizacao(EventoAtualizacao.Situacao.CANCELADA);
+              return;
+            }
+
             var linha = reader.ReadLine();
-            ProcessarLinha(linha);
-
-            // Atualiza a situação do processamento
-            posicao += linha.Length;
-            EnviarAtualizacao(
-              importacaoId: int.Parse(importacaoId),
-              posicao: posicao,
-              tamanho: arquivo.Length,
-              situacao: EventoAtualizacao.Situacao.PROCESSANDO
-            );
-
-            // Sleep para simular uma carga de trabalho mais pesada
-            System.Threading.Thread.Sleep(1000);
-            log.LogInformation($"Processado: Arquivo: {importacaoId} - Linha: '{linha}'");
+            ProcessarLinha(linha, log);
           }
         }
       }
@@ -101,21 +113,12 @@ namespace rotinas_importacao.rotinas
         log.LogError($"Ocorreu um erro ao processar o arquivo: {importacaoId} - Mensagem: '{exception.Message}'");
         log.LogError($"Stacktrace: {exception.StackTrace}");
         // Envia a informação de erro
-        EnviarAtualizacao(
-          importacaoId: int.Parse(importacaoId),
-          posicao: posicao,
-          tamanho: arquivo.Length,
-          situacao: EventoAtualizacao.Situacao.ERRO
-        );
+        EnviarAtualizacao(EventoAtualizacao.Situacao.ERRO);
       }
 
       // Envia a informação de processamento concluído
-      EnviarAtualizacao(
-        importacaoId: int.Parse(importacaoId),
-        posicao: arquivo.Length,
-        tamanho: arquivo.Length,
-        situacao: EventoAtualizacao.Situacao.SUCESSO
-      );
+      posicao = tamanho;
+      EnviarAtualizacao(EventoAtualizacao.Situacao.SUCESSO);
       log.LogInformation($"Processamento do arquivo '{importacaoId}' concluído");
     }
 
@@ -123,7 +126,7 @@ namespace rotinas_importacao.rotinas
     /// Realiza o processamento de uma linha do arquivo, identificando o layout do registro
     /// </summary>
     /// <param name="linha">Linha a ser processada</param>
-    private void ProcessarLinha(string linha)
+    private void ProcessarLinha(string linha, ILogger log)
     {
       var valores = linha.Split(";");
 
@@ -139,6 +142,14 @@ namespace rotinas_importacao.rotinas
       {
         ProcessarTelefone(valores);
       }
+
+      // Atualiza a situação do processamento
+      posicao += linha.Length;
+      EnviarAtualizacao(EventoAtualizacao.Situacao.PROCESSANDO);
+
+      // Sleep para simular uma carga de trabalho mais pesada
+      System.Threading.Thread.Sleep(1000);
+      log.LogInformation($"Processado: Arquivo: {importacaoId} - Linha: '{linha}'");
     }
 
     /// <summary>
@@ -262,7 +273,11 @@ namespace rotinas_importacao.rotinas
       contexto.SaveChanges();
     }
 
-    private void EnviarAtualizacao(int importacaoId, long tamanho, long posicao, EventoAtualizacao.Situacao situacao)
+    /// <summary>
+    /// Envia um evento de atualização para o serviço de mensageria
+    /// </summary>
+    /// <param name="situacao">Situação do processo de importação</param>
+    private void EnviarAtualizacao(EventoAtualizacao.Situacao situacao)
     {
       var evento = new EventoAtualizacao
       {
@@ -272,6 +287,20 @@ namespace rotinas_importacao.rotinas
         situacao = situacao
       };
       mensageriaService.EnviarAtualizacao(evento);
+    }
+
+    /// <summary>
+    /// Trata os eventos de comandos recebidos pelo serviço de mensageria
+    /// </summary>
+    /// <param name="sender">Objeto que gerou o evento</param>
+    /// <param name="comando">Comando recebido</param>
+    private void EventoComandoRecebido(Object sender, ComandoImportacao comando)
+    {
+      // Cancela o processamento do arquivo
+      if (comando.comando == ComandoImportacao.Comando.CANCELAR)
+      {
+        cancellationTokenSource.Cancel();
+      }
     }
   }
 }
