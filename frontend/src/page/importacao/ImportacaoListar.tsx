@@ -5,10 +5,12 @@ import Container  from "react-bootstrap/Container";
 import ProgressBar  from "react-bootstrap/ProgressBar";
 import Row  from "react-bootstrap/Row";
 import Table from "react-bootstrap/Table";
+import Button from "react-bootstrap/Button";
+import Modal from "react-bootstrap/Modal";
 
 import Layout from "../../layout/Layout";
 
-import { consultarImportacao, obterAtualizacoes } from "../../controller/ImportacaoController";
+import { cancelarImportacao, consultarImportacao, obterAtualizacoes } from "../../controller/ImportacaoController";
 
 import Importacao from "../../model/Importacao";
 import SituacaoImportacao from "../../model/SituacaoImportacao";
@@ -21,6 +23,8 @@ import Situacao from "../../model/Situacao";
  */
 export default function ImportacaoListar() {
   const [importacoes, setImportacoes] = useState<Importacao[]>([]);
+  const [modalVisivel, setModalVisivel] = useState<boolean>(false);
+  const [importacaoCancelar, setImportacaoCancelar] = useState<number>(0);
 
   const importacoesRef = useRef(importacoes);
 
@@ -66,6 +70,34 @@ export default function ImportacaoListar() {
   }
 
   /**
+   * Exibe o modal para que o usuário possa confirmar o cancelamento
+   * 
+   * @param importacaoId Identificação da importação a ser cancelada
+   */
+  const exibirModal = (importacaoId: number) => {
+    setImportacaoCancelar(importacaoId);
+    setModalVisivel(true);
+  }
+
+  /**
+   * Oculta o modal de cancelamento e limpa a identificação da importação a ser cancelada
+   */
+  const ocultarModal = () => {
+    setImportacaoCancelar(0);
+    setModalVisivel(false);
+  }
+
+  /**
+   * Confirma o cancelamento e oculta o modal
+   */
+  const confirmarCancelamento = () => {
+    if (importacaoCancelar > 0) {
+      cancelarImportacao(importacaoCancelar);
+    }
+    ocultarModal();
+  }
+
+  /**
    * Renderiza uma importação como uma linha da tabela
    * 
    * @param importacao Dados da importação a ser exibida
@@ -97,37 +129,62 @@ export default function ImportacaoListar() {
         <td>{ importacao.nomeArquivo }</td>
         <td>{ importacao.situacao }</td>
         <td><ProgressBar now={importacao.percCompleto} label={`${importacao.percCompleto}%`} variant={progressVariant} /></td>
+        <td>
+          {
+            (importacao.situacao === Situacao.PROCESSANDO) && <Button variant="danger" onClick={() => exibirModal(importacao.id)}>Cancelar</Button>
+          }
+        </td>
       </tr>
     );
   }
 
   return (
-    <Layout>
-      <Container>
-        <Row className="mb-3">
-          <Col>
-            <h1>Importações em progresso</h1>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <Table striped>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Layout</th>
-                  <th>Arquivo</th>
-                  <th>Situação</th>
-                  <th>Progresso</th>
-                </tr>
-              </thead>
-              <tbody>
-                { importacoes.map(importacao => exibirImportacao(importacao)) }
-              </tbody>
-            </Table>
-          </Col>
-        </Row>
-      </Container>
-    </Layout>
+    <>
+      <Layout>
+        <Container>
+          <Row className="mb-3">
+            <Col>
+              <h1>Importações em progresso</h1>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <Table striped>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Layout</th>
+                    <th>Arquivo</th>
+                    <th>Situação</th>
+                    <th>Progresso</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  { importacoes.map(importacao => exibirImportacao(importacao)) }
+                </tbody>
+              </Table>
+            </Col>
+          </Row>
+        </Container>
+      </Layout>
+
+      <Modal show={modalVisivel} onHide={ocultarModal}>
+        <Modal.Header>
+          <Modal.Title>Tem certeza?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <span>Tem certeza que deseja cancelar essa importação? O processamento será interrompido e não poderá ser retomado.</span>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={ocultarModal}>
+            Continuar processamento
+          </Button>
+          <Button variant="primary" onClick={confirmarCancelamento}>
+            Cancelar importação
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
   );
 }
