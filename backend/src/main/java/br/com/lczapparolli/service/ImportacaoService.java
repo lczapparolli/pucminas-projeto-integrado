@@ -1,5 +1,6 @@
 package br.com.lczapparolli.service;
 
+import static br.com.lczapparolli.dominio.Comando.CANCELAR;
 import static br.com.lczapparolli.dominio.Situacao.CANCELADA;
 import static br.com.lczapparolli.dominio.Situacao.ERRO;
 import static br.com.lczapparolli.dominio.Situacao.PAUSADA;
@@ -8,6 +9,7 @@ import static br.com.lczapparolli.dominio.Situacao.SUCESSO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_CAMPO_NAO_INFORMADO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_IMPORTACAO_NAO_ENCONTRADA;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_IMPORTACAO_NAO_INFORMADA;
+import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_IMPORTACAO_NAO_PROCESSANDO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_LAYOUT_DESATIVADO;
 import static br.com.lczapparolli.erro.ErroAplicacao.ERRO_LAYOUT_NAO_ENCONTRADO;
 import static java.util.Objects.isNull;
@@ -21,18 +23,14 @@ import javax.inject.Inject;
 import javax.transaction.Transactional;
 
 import br.com.lczapparolli.dominio.Situacao;
+import br.com.lczapparolli.dto.ComandoArquivoDTO;
 import br.com.lczapparolli.dto.ImportacaoNovoDTO;
-import br.com.lczapparolli.dto.SituacaoImportacaoDTO;
 import br.com.lczapparolli.entity.ImportacaoEntity;
 import br.com.lczapparolli.entity.LayoutEntity;
 import br.com.lczapparolli.entity.SituacaoEntity;
 import br.com.lczapparolli.erro.ResultadoOperacao;
 import br.com.lczapparolli.repository.ImportacaoRepository;
 import br.com.lczapparolli.service.upload.UploadService;
-import io.smallrye.reactive.messaging.annotations.Blocking;
-import io.vertx.core.json.JsonObject;
-import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
 /**
  * Serviço com regras de negócio para manipulação das importações
@@ -53,6 +51,9 @@ public class ImportacaoService {
 
     @Inject
     ImportacaoRepository importacaoRepository;
+
+    @Inject
+    MensageriaService mensageriaService;
 
     private static final List<Situacao> fimProcessamento = List.of(SUCESSO, ERRO, CANCELADA);
     private static final List<Situacao> processamentoAtivo = List.of(PROCESSANDO, PAUSADA);
@@ -139,18 +140,32 @@ public class ImportacaoService {
     }
 
     /**
-     * Realiza o processamento das atualizações de situação das importações
+     * Realiza o cancelamento de uma importação
      *
-     * @param jsonObject Conteúdo da mensagem, contendo a situação atualizada
-     * @return Retorna o objeto recebido para ser reaproveitado
+     * @param importacaoId Identificação única da importação
+     * @return Retorna o resultado da operação
      */
-    @Blocking
-    @Incoming("eventos-arquivos")
-    @Outgoing("atualizacao-processamento-out")
-    public SituacaoImportacaoDTO receberAtualizacao(JsonObject jsonObject) {
-        var atualizacao = jsonObject.mapTo(SituacaoImportacaoDTO.class);
-        atualizarStatusImportacao(atualizacao.getImportacaoId(), atualizacao.getSituacao());
-        return atualizacao;
+    public ResultadoOperacao<Void> cancelarImportacao(Integer importacaoId) {
+        var resultadoOperacao = new ResultadoOperacao<Void>();
+
+        var consultaImportacao = obterImportacao(importacaoId);
+        if (consultaImportacao.possuiErros()) {
+            resultadoOperacao.addErros(consultaImportacao.getErros());
+            return resultadoOperacao;
+        }
+
+        var importacao = consultaImportacao.getResultado();
+        if (!importacao.getSituacao().getDescricao().equals(PROCESSANDO.name())) {
+            resultadoOperacao.addErro(ERRO_IMPORTACAO_NAO_PROCESSANDO, "importacaoId");
+            return resultadoOperacao;
+        }
+
+        var comando = ComandoArquivoDTO.builder()
+                .comando(CANCELAR)
+                .build();
+        mensageriaService.enviarComando(comando, importacao);
+
+        return resultadoOperacao;
     }
 
     /**
@@ -160,7 +175,7 @@ public class ImportacaoService {
      * @param situacao Situação atual da importação
      */
     @Transactional
-    void atualizarStatusImportacao(Integer importacaoId, Situacao situacao) {
+    public void atualizarStatusImportacao(Integer importacaoId, Situacao situacao) {
         var importacao = importacaoRepository.findById(importacaoId);
         if (importacao.getSituacao().getDescricao().equals(situacao.name())) {
             return;

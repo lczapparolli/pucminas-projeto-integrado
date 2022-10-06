@@ -71,6 +71,26 @@ public class ImportacaoResource {
     }
 
     /**
+     * Cancela a execução de uma importação
+     *
+     * @param importacaoId Identificação da importação a ser cancelada
+     * @return Retorna o resultado da operação
+     */
+    @POST
+    @Path("/{importacaoId}/cancelar")
+    @Operation(description = "Interrompe a execução de uma importação de forma assíncrona")
+    @APIResponse(responseCode = "204", name = "Sucesso", description = "A solicitação de cancelamento foi processada com sucesso")
+    @APIResponse(responseCode = "400", name = "Dados inválidos", description = "Os dados informados na requisição não são válidos", content = @Content(schema = @Schema(type = ARRAY, implementation = ErroDTO.class)))
+    @APIResponse(responseCode = "500", name = "Erro interno", description = "Ocorreu um erro internamente que impediu o processamento da solicitação", content = @Content(schema = @Schema(type = ARRAY, implementation = ErroDTO.class)))
+    public Response cancelarImportacao(
+            @Parameter(name = "importacaoId", description = "Identificação única da importação a ser cancelada", example = "1", required = true)
+            @PathParam("importacaoId")
+            Integer importacaoId) {
+        var resultado = importacaoService.cancelarImportacao(importacaoId);
+        return construirResposta(resultado);
+    }
+
+    /**
      * Lista as importações conforme os parâmetros fornecidos
      *
      * @param ativo Indica se devem ser retornadas as importações ativos ou finalizadas
